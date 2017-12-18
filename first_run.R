@@ -14,7 +14,7 @@ library(dplyr)
 library(tidyr)
 library(readr)
 library(moments)
-library(chron) # To check if a day is weekend or not
+library(chron)
 
 # Load dataset
 # UCI - Appliances energy prediction Data Set 
@@ -234,8 +234,8 @@ md.pattern(apperg_data.mis)
 library(VIM)
 vim_plot <- aggr(apperg_data.mis, col = c('navyblue','yellow'),
                     numbers = TRUE, sortVars = TRUE,
-                    labels = names(apperg_data.mis), cex.axis=.7,
-                    gap=3, ylab=c("Missing data","Pattern"))
+                    labels = names(apperg_data.mis), cex.axis = .7,
+                    gap = 3, ylab = c("Missing data","Pattern"))
 
 
 # Use "mice" to impute missing values
