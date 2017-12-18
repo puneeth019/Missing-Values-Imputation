@@ -217,6 +217,7 @@ skewness(apperg_data$Tdewpoint)
 
 # Create 10% missing data in each of the columns from "T1" to "rv2"
 library(missForest)
+library(magrittr)
 set.seed(123)
 apperg_data.mis <- prodNA(apperg_data[,-(1:3)], noNA = 0.1) %>% 
   cbind(apperg_data[,1:3], .)
