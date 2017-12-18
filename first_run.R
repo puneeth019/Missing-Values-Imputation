@@ -37,6 +37,7 @@ apperg_data$RH_1 <- as.numeric(apperg_data$RH_1)
 apperg_data$T2 <- as.numeric(apperg_data$T2)
 apperg_data$RH_2 <- as.numeric(apperg_data$RH_2)
 apperg_data$T3 <- as.numeric(apperg_data$T3)
+
 apperg_data$RH_3 <- as.numeric(apperg_data$RH_3)
 apperg_data$T4 <- as.numeric(apperg_data$T4)
 apperg_data$RH_4 <- as.numeric(apperg_data$RH_4)
