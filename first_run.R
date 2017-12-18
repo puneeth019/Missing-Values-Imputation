@@ -17,10 +17,11 @@ library(moments)
 library(chron) # To check if a day is weekend or not
 
 # Load dataset
-# Appliances energy prediction Data Set 
+# UCI - Appliances energy prediction Data Set 
 # https://archive.ics.uci.edu/ml/datasets/Appliances+energy+prediction
 
-apperg_data <- fread(input = "D:/DA/PGDBA/cummins_internship/project/datasets/energydata_complete.csv")
+url <- c("https://archive.ics.uci.edu/ml/machine-learning-databases/00374/energydata_complete.csv")
+apperg_data <- fread(input = url)
 
 # Exploratory Data Analysis (EDA)
 
@@ -216,10 +217,11 @@ skewness(apperg_data$Tdewpoint)
 
 # Create 10% missing data in each of the columns from "T1" to "rv2"
 library(missForest)
+set.seed(123)
 apperg_data.mis <- prodNA(apperg_data[,-(1:3)], noNA = 0.1) %>% 
   cbind(apperg_data[,1:3], .)
+fwrite(x = apperg_data.mis, file = "apperg_data_missing.csv")
 summary(apperg_data.mis)
-
 
 #install.packages("mice")
 library(mice)
@@ -236,8 +238,8 @@ vim_plot <- aggr(apperg_data.mis, col = c('navyblue','yellow'),
                     gap=3, ylab=c("Missing data","Pattern"))
 
 
-# Use "mice" to impute missing values 
-imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 50, method = 'pmm', seed = 500)
+# Use "mice" to impute missing values
+imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 50, method = 'pmm', seed = 123)
 summary(imputed_Data)
 class(imputed_Data)
 
@@ -245,9 +247,27 @@ class(imputed_Data)
 imputed_Data$imp$T1
 
 #get complete data
+complete_Data_1 <- complete(imputed_Data, 1)
+fwrite(x = complete_Data_1, file = "complete_Data_1.csv")
+complete_Data_2 <- complete(imputed_Data, 2)
+fwrite(x = complete_Data_2, file = "complete_Data_2.csv")
+complete_Data_3 <- complete(imputed_Data, 3)
+fwrite(x = complete_Data_3, file = "complete_Data_3.csv")
+complete_Data_4 <- complete(imputed_Data, 4)
+fwrite(x = complete_Data_4, file = "complete_Data_4.csv")
+complete_Data_5 <- complete(imputed_Data, 5)
+fwrite(x = complete_Data_5, file = "complete_Data_5.csv")
 
-complete_Data_1 <- complete(imputed_Data, 1) %>% fwrite(file = "complete_Data_1.csv")
-complete_Data_2 <- complete(imputed_Data, 2) %>% fwrite(file = "complete_Data_2.csv")
-complete_Data_3 <- complete(imputed_Data, 3) %>% fwrite(file = "complete_Data_3.csv")
-complete_Data_4 <- complete(imputed_Data, 4) %>% fwrite(file = "complete_Data_4.csv")
-complete_Data_5 <- complete(imputed_Data, 5) %>% fwrite(file = "complete_Data_5.csv")
+# summary of completed datasets
+summary(complete_Data_1)
+summary(complete_Data_2)
+summary(complete_Data_3)
+summary(complete_Data_4)
+summary(complete_Data_5)
+
+
+# calculate average of these five "Complete" datasets
+complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_3, complete_Data_4, complete_Data_5))[,lapply(.SD, mean), list(date, Appliances, lights)]
+fwrite(x = complete_Data, file = "complete_Data.csv")
+
+
