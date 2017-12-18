@@ -1,3 +1,4 @@
+#setwd(dir = "D:/DA/PGDBA/cummins_internship/project/datasets")
 
 # Load libraries
 library(data.table)
@@ -243,7 +244,10 @@ class(imputed_Data)
 # check imputed values
 imputed_Data$imp$T1
 
-#get complete data (2nd out of 5)
-completeData <- complete(imputed_Data, 2)
+#get complete data
 
-
+complete_Data_1 <- complete(imputed_Data, 1) %>% fwrite(file = "complete_Data_1.csv")
+complete_Data_2 <- complete(imputed_Data, 2) %>% fwrite(file = "complete_Data_2.csv")
+complete_Data_3 <- complete(imputed_Data, 3) %>% fwrite(file = "complete_Data_3.csv")
+complete_Data_4 <- complete(imputed_Data, 4) %>% fwrite(file = "complete_Data_4.csv")
+complete_Data_5 <- complete(imputed_Data, 5) %>% fwrite(file = "complete_Data_5.csv")
