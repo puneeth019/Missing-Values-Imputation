@@ -227,10 +227,10 @@ fwrite(x = apperg_data.mis, file = "apperg_data_missing.csv")
 summary(apperg_data.mis)
 
 #install.packages("mice")
-library(mice)
+#library(mice)
 
 # Visualise missing values using "mice"
-md.pattern(apperg_data.mis)
+#md.pattern(apperg_data.mis)
 
 # Visualize missing values using "VIM"
 #install.packages("VIM")
@@ -242,19 +242,19 @@ md.pattern(apperg_data.mis)
 
 
 # Use "mice" to impute missing values
-imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm', seed = 123)
-summary(imputed_Data)
-class(imputed_Data)
+#imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm', seed = 123)
+#summary(imputed_Data)
+#class(imputed_Data)
 
 # check imputed values
-imputed_Data$imp$T1
+#imputed_Data$imp$T1
 
 #get complete data
-complete_Data_1 <- complete(imputed_Data, 1)
-complete_Data_2 <- complete(imputed_Data, 2)
-complete_Data_3 <- complete(imputed_Data, 3)
-complete_Data_4 <- complete(imputed_Data, 4)
-complete_Data_5 <- complete(imputed_Data, 5)
+#complete_Data_1 <- complete(imputed_Data, 1)
+#complete_Data_2 <- complete(imputed_Data, 2)
+#complete_Data_3 <- complete(imputed_Data, 3)
+#complete_Data_4 <- complete(imputed_Data, 4)
+#complete_Data_5 <- complete(imputed_Data, 5)
 
 # write complete data into files, if required
 #fwrite(x = complete_Data_1, file = "complete_Data_1.csv")
@@ -265,18 +265,20 @@ complete_Data_5 <- complete(imputed_Data, 5)
 
 
 # summary of completed datasets
-summary(complete_Data_1)
-summary(complete_Data_2)
-summary(complete_Data_3)
-summary(complete_Data_4)
-summary(complete_Data_5)
+#summary(complete_Data_1)
+#summary(complete_Data_2)
+#summary(complete_Data_3)
+#summary(complete_Data_4)
+#summary(complete_Data_5)
 
 
 # calculate average of these five "Complete" datasets
-complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_3, complete_Data_4, complete_Data_5))[,lapply(.SD, mean), list(date, Appliances, lights)]
+#complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_3, complete_Data_4, complete_Data_5))[,lapply(.SD, mean), list(date, Appliances, lights)]
 
 # write data, if required
 #fwrite(x = complete_Data, file = "complete_Data.csv")
+
+
 
 
 # Calculate RMSE(performance metric) using "mice"
@@ -286,7 +288,7 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE_mice <- foreach(i = 1:5, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
+RMSE_mice <- foreach(i = 1:50, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
   
   imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm')
   complete_Data <- rbindlist(list(complete(imputed_Data, 1), 
@@ -315,7 +317,7 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE_amelia <- foreach(i = 1:5, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+RMSE_amelia <- foreach(i = 1:50, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
   
   amelia_fit <- amelia(apperg_data.mis, m = 5, parallel = "multicore", 
                        idvars = c("date", "Appliances", "lights", "rv2"))
@@ -331,7 +333,45 @@ RMSE_amelia <- foreach(i = 1:5, .combine = rbind, .packages = c("Amelia", "data.
 
 #stop cluster
 stopCluster(cl)
-bocplot(RMSE_amelia)
+boxplot(RMSE_amelia)
 
 # export the outputs to csv files, if required
 #write.amelia(amelia_fit, file.stem = "amelia_imputed_data_set")
+
+
+
+
+
+RMSE_all <- cbind(RMSE_amelia, RMSE_mice) %>% `colnames<-`(c("amelia", "mice"))
+boxplot.matrix(x = RMSE_all, use.cols = T)
+
+# write file
+as.data.frame(RMSE_all) %>% fwrite(file = "RMSE_all.csv")
+
+
+
+
+
+# "missForest" for missing values imputation
+#install.packages("missForest")
+library(missForest)
+# Calculate RMSE
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+apperg_data.imp <- missForest(xmis = apperg_data.mis[,-(1:3)])
+
+#check imputed values
+apperg_data.imp$ximp
+
+#check imputation error
+apperg_data.imp$OOBerror
+
+#comparing actual data accuracy
+apperg_data.err <- mixError(apperg_data.imp$ximp, apperg_data.mis, apperg_data)
+apperg_data.err
+
+
+
