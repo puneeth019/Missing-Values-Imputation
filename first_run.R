@@ -279,14 +279,14 @@ complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_
 #fwrite(x = complete_Data, file = "complete_Data.csv")
 
 
-# Calculate RMSE(performance metric) using mice
+# Calculate RMSE(performance metric) using "mice"
 
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE_mice <- foreach(i = 1:10, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
+RMSE_mice <- foreach(i = 1:5, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
   
   imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm')
   complete_Data <- rbindlist(list(complete(imputed_Data, 1), 
@@ -304,8 +304,34 @@ stopCluster(cl)
 boxplot(RMSE_mice)
 
 
+
+
 # Amelia for missing values imputation
+#install.packages("Amelia")
 
+# Calculate RMSE
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
 
+RMSE_amelia <- foreach(i = 1:5, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+  
+  amelia_fit <- amelia(apperg_data.mis, m = 5, parallel = "multicore", 
+                       idvars = c("date", "Appliances", "lights", "rv2"))
+  complete_Data <- rbindlist(list(amelia_fit$imputations[[1]], 
+                                  amelia_fit$imputations[[2]], 
+                                  amelia_fit$imputations[[3]], 
+                                  amelia_fit$imputations[[4]], 
+                                  amelia_fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
+  temp_RMSE <- caret::RMSE(apperg_data$T1,complete_Data$T1)
+  temp_RMSE
+  
+}
 
+#stop cluster
+stopCluster(cl)
+bocplot(RMSE_amelia)
 
+# export the outputs to csv files, if required
+#write.amelia(amelia_fit, file.stem = "amelia_imputed_data_set")
