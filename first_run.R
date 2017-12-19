@@ -15,6 +15,8 @@ library(tidyr)
 library(readr)
 library(moments)
 library(chron)
+library(foreach)
+library(doParallel)
 
 # Load dataset
 # UCI - Appliances energy prediction Data Set 
@@ -232,15 +234,15 @@ md.pattern(apperg_data.mis)
 
 # Visualize missing values using "VIM"
 #install.packages("VIM")
-library(VIM)
-vim_plot <- aggr(apperg_data.mis, col = c('navyblue','yellow'),
-                    numbers = TRUE, sortVars = TRUE,
-                    labels = names(apperg_data.mis), cex.axis = .7,
-                    gap = 3, ylab = c("Missing data","Pattern"))
+#library(VIM)
+#vim_plot <- aggr(apperg_data.mis, col = c('navyblue','yellow'),
+#                    numbers = TRUE, sortVars = TRUE,
+#                    labels = names(apperg_data.mis), cex.axis = .7,
+#                    gap = 3, ylab = c("Missing data","Pattern"))
 
 
 # Use "mice" to impute missing values
-imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 50, method = 'pmm', seed = 123)
+imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm', seed = 123)
 summary(imputed_Data)
 class(imputed_Data)
 
@@ -249,15 +251,18 @@ imputed_Data$imp$T1
 
 #get complete data
 complete_Data_1 <- complete(imputed_Data, 1)
-fwrite(x = complete_Data_1, file = "complete_Data_1.csv")
 complete_Data_2 <- complete(imputed_Data, 2)
-fwrite(x = complete_Data_2, file = "complete_Data_2.csv")
 complete_Data_3 <- complete(imputed_Data, 3)
-fwrite(x = complete_Data_3, file = "complete_Data_3.csv")
 complete_Data_4 <- complete(imputed_Data, 4)
-fwrite(x = complete_Data_4, file = "complete_Data_4.csv")
 complete_Data_5 <- complete(imputed_Data, 5)
-fwrite(x = complete_Data_5, file = "complete_Data_5.csv")
+
+# write complete data into files, if required
+#fwrite(x = complete_Data_1, file = "complete_Data_1.csv")
+#fwrite(x = complete_Data_2, file = "complete_Data_2.csv")
+#fwrite(x = complete_Data_3, file = "complete_Data_3.csv")
+#fwrite(x = complete_Data_4, file = "complete_Data_4.csv")
+#fwrite(x = complete_Data_5, file = "complete_Data_5.csv")
+
 
 # summary of completed datasets
 summary(complete_Data_1)
@@ -269,6 +274,38 @@ summary(complete_Data_5)
 
 # calculate average of these five "Complete" datasets
 complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_3, complete_Data_4, complete_Data_5))[,lapply(.SD, mean), list(date, Appliances, lights)]
-fwrite(x = complete_Data, file = "complete_Data.csv")
+
+# write data, if required
+#fwrite(x = complete_Data, file = "complete_Data.csv")
+
+
+# Calculate RMSE(performance metric) using mice
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+RMSE_mice <- foreach(i = 1:10, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
+  
+  imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm')
+  complete_Data <- rbindlist(list(complete(imputed_Data, 1), 
+                                  complete(imputed_Data, 2), 
+                                  complete(imputed_Data, 3), 
+                                  complete(imputed_Data, 4), 
+                                  complete(imputed_Data, 5)))[,lapply(.SD, mean), list(date, Appliances, lights)]
+  temp_RMSE <- caret::RMSE(apperg_data$T1,complete_Data$T1)
+  temp_RMSE
+  
+}
+
+#stop cluster
+stopCluster(cl)
+boxplot(RMSE_mice)
+
+
+# Amelia for missing values imputation
+
+
 
 
