@@ -1,5 +1,7 @@
 #setwd(dir = "D:/DA/PGDBA/cummins_internship/project/datasets")
 
+# Code to impute missing values using various existing imputation pacakges
+
 # Clear the Workspace
 rm(list=ls())
 
@@ -47,199 +49,201 @@ library(xts)
 # UCI - Appliances energy prediction Data Set 
 # https://archive.ics.uci.edu/ml/datasets/Appliances+energy+prediction
 
-url <- c("https://archive.ics.uci.edu/ml/machine-learning-databases/00374/energydata_complete.csv")
-apperg_data <- fread(input = url)
+url.data <- c("https://archive.ics.uci.edu/ml/machine-learning-databases/00374/energydata_complete.csv")
+appErg.data <- fread(input = url.data)
+
+
 
 # Exploratory Data Analysis (EDA)
 
 # Summary of data
-str(apperg_data)
+str(appErg.data)
 
 #Look for missing data
-sum(is.na(apperg_data)) # None found
+sum(is.na(appErg.data)) # None found
 
 # convert classes to "numeric" wherever required
-apperg_data$Appliances <- as.numeric(apperg_data$Appliances)
-apperg_data$lights <- as.numeric(apperg_data$lights)
-apperg_data$T1 <- as.numeric(apperg_data$T1)
-apperg_data$RH_1 <- as.numeric(apperg_data$RH_1)
-apperg_data$T2 <- as.numeric(apperg_data$T2)
-apperg_data$RH_2 <- as.numeric(apperg_data$RH_2)
-apperg_data$T3 <- as.numeric(apperg_data$T3)
-apperg_data$RH_3 <- as.numeric(apperg_data$RH_3)
-apperg_data$T4 <- as.numeric(apperg_data$T4)
-apperg_data$RH_4 <- as.numeric(apperg_data$RH_4)
-apperg_data$T5 <- as.numeric(apperg_data$T5)
-apperg_data$RH_5 <- as.numeric(apperg_data$RH_5)
-apperg_data$T6 <- as.numeric(apperg_data$T6)
-apperg_data$RH_6 <- as.numeric(apperg_data$RH_6)
-apperg_data$T7 <- as.numeric(apperg_data$T7)
-apperg_data$RH_7 <- as.numeric(apperg_data$RH_7)
-apperg_data$T8 <- as.numeric(apperg_data$T8)
-apperg_data$RH_8 <- as.numeric(apperg_data$RH_8)
-apperg_data$T9 <- as.numeric(apperg_data$T9)
-apperg_data$RH_9 <- as.numeric(apperg_data$RH_9)
+appErg.data$Appliances <- as.numeric(appErg.data$Appliances)
+appErg.data$lights <- as.numeric(appErg.data$lights)
+appErg.data$T1 <- as.numeric(appErg.data$T1)
+appErg.data$RH_1 <- as.numeric(appErg.data$RH_1)
+appErg.data$T2 <- as.numeric(appErg.data$T2)
+appErg.data$RH_2 <- as.numeric(appErg.data$RH_2)
+appErg.data$T3 <- as.numeric(appErg.data$T3)
+appErg.data$RH_3 <- as.numeric(appErg.data$RH_3)
+appErg.data$T4 <- as.numeric(appErg.data$T4)
+appErg.data$RH_4 <- as.numeric(appErg.data$RH_4)
+appErg.data$T5 <- as.numeric(appErg.data$T5)
+appErg.data$RH_5 <- as.numeric(appErg.data$RH_5)
+appErg.data$T6 <- as.numeric(appErg.data$T6)
+appErg.data$RH_6 <- as.numeric(appErg.data$RH_6)
+appErg.data$T7 <- as.numeric(appErg.data$T7)
+appErg.data$RH_7 <- as.numeric(appErg.data$RH_7)
+appErg.data$T8 <- as.numeric(appErg.data$T8)
+appErg.data$RH_8 <- as.numeric(appErg.data$RH_8)
+appErg.data$T9 <- as.numeric(appErg.data$T9)
+appErg.data$RH_9 <- as.numeric(appErg.data$RH_9)
 
-apperg_data$T_out <- as.numeric(apperg_data$T_out)
-apperg_data$RH_out <- as.numeric(apperg_data$RH_out)
-apperg_data$Press_mm_hg <- as.numeric(apperg_data$Press_mm_hg)
+appErg.data$T_out <- as.numeric(appErg.data$T_out)
+appErg.data$RH_out <- as.numeric(appErg.data$RH_out)
+appErg.data$Press_mm_hg <- as.numeric(appErg.data$Press_mm_hg)
 
-apperg_data$Windspeed <- as.numeric(apperg_data$Windspeed)
-apperg_data$Visibility <- as.numeric(apperg_data$Visibility)
-apperg_data$Tdewpoint <- as.numeric(apperg_data$Tdewpoint)
+appErg.data$Windspeed <- as.numeric(appErg.data$Windspeed)
+appErg.data$Visibility <- as.numeric(appErg.data$Visibility)
+appErg.data$Tdewpoint <- as.numeric(appErg.data$Tdewpoint)
 
-apperg_data$rv1 <- as.numeric(apperg_data$rv1)
-apperg_data$rv2 <- as.numeric(apperg_data$rv2)
+appErg.data$rv1 <- as.numeric(appErg.data$rv1)
+appErg.data$rv2 <- as.numeric(appErg.data$rv2)
 
 
 # Summary of dataset
-summary(apperg_data)
+summary(appErg.data)
 
 
 # Check distribution of attributes
 
-# hist(apperg_data$T1, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T1), col = "blue", lwd = 2)
-# lines(density(apperg_data$T1, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T1)
+# hist(appErg.data$T1, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T1), col = "blue", lwd = 2)
+# lines(density(appErg.data$T1, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T1)
 # 
 # 
-# hist(apperg_data$RH_1, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_1), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_1, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_1)
+# hist(appErg.data$RH_1, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_1), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_1, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_1)
 # 
 # 
-# hist(apperg_data$T2, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T2), col = "blue", lwd = 2)
-# lines(density(apperg_data$T2, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T2)
+# hist(appErg.data$T2, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T2), col = "blue", lwd = 2)
+# lines(density(appErg.data$T2, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T2)
 # 
 # 
-# hist(apperg_data$RH_2, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_2), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_2, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_2)
+# hist(appErg.data$RH_2, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_2), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_2, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_2)
 # 
 # 
-# hist(apperg_data$T3, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T3), col = "blue", lwd = 2)
-# lines(density(apperg_data$T3, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T3)
+# hist(appErg.data$T3, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T3), col = "blue", lwd = 2)
+# lines(density(appErg.data$T3, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T3)
 # 
 # 
-# hist(apperg_data$RH_3, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_3), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_3, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_3)
+# hist(appErg.data$RH_3, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_3), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_3, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_3)
 # 
 # 
-# hist(apperg_data$T4, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T4), col = "blue", lwd = 2)
-# lines(density(apperg_data$T4, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T4)
+# hist(appErg.data$T4, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T4), col = "blue", lwd = 2)
+# lines(density(appErg.data$T4, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T4)
 # 
 # 
-# hist(apperg_data$RH_4, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_4), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_4, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_4)
+# hist(appErg.data$RH_4, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_4), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_4, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_4)
 # 
 # 
-# hist(apperg_data$T5, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T5), col = "blue", lwd = 2)
-# lines(density(apperg_data$T5, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T5)
+# hist(appErg.data$T5, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T5), col = "blue", lwd = 2)
+# lines(density(appErg.data$T5, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T5)
 # 
 # 
-# hist(apperg_data$RH_5, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_5), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_5, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_5)
+# hist(appErg.data$RH_5, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_5), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_5, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_5)
 # 
 # 
-# hist(apperg_data$T6, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T6), col = "blue", lwd = 2)
-# lines(density(apperg_data$T6, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T6)
+# hist(appErg.data$T6, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T6), col = "blue", lwd = 2)
+# lines(density(appErg.data$T6, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T6)
 # 
 # 
-# hist(apperg_data$RH_6, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_6), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_6, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_6)
+# hist(appErg.data$RH_6, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_6), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_6, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_6)
 # 
 # 
-# hist(apperg_data$T7, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T7), col = "blue", lwd = 2)
-# lines(density(apperg_data$T7, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T7)
+# hist(appErg.data$T7, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T7), col = "blue", lwd = 2)
+# lines(density(appErg.data$T7, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T7)
 # 
 # 
-# hist(apperg_data$RH_7, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_7), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_7, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_7)
+# hist(appErg.data$RH_7, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_7), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_7, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_7)
 # 
 # 
-# hist(apperg_data$T8, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T8), col = "blue", lwd = 2)
-# lines(density(apperg_data$T8, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T8)
+# hist(appErg.data$T8, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T8), col = "blue", lwd = 2)
+# lines(density(appErg.data$T8, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T8)
 # 
 # 
-# hist(apperg_data$RH_8, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_8), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_8, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_8)
+# hist(appErg.data$RH_8, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_8), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_8, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_8)
 # 
 # 
-# hist(apperg_data$T9, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T9), col = "blue", lwd = 2)
-# lines(density(apperg_data$T9, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T9)
+# hist(appErg.data$T9, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T9), col = "blue", lwd = 2)
+# lines(density(appErg.data$T9, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T9)
 # 
 # 
-# hist(apperg_data$RH_9, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_9), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_9, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_9)
+# hist(appErg.data$RH_9, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_9), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_9, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_9)
 # 
 # 
-# hist(apperg_data$T_out, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$T_out), col = "blue", lwd = 2)
-# lines(density(apperg_data$T_out, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$T_out)
+# hist(appErg.data$T_out, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$T_out), col = "blue", lwd = 2)
+# lines(density(appErg.data$T_out, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$T_out)
 # 
 # 
-# hist(apperg_data$Press_mm_hg, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$Press_mm_hg), col = "blue", lwd = 2)
-# lines(density(apperg_data$Press_mm_hg, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$Press_mm_hg)
+# hist(appErg.data$Press_mm_hg, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$Press_mm_hg), col = "blue", lwd = 2)
+# lines(density(appErg.data$Press_mm_hg, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$Press_mm_hg)
 # 
 # 
-# hist(apperg_data$RH_out, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$RH_out), col = "blue", lwd = 2)
-# lines(density(apperg_data$RH_out, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$RH_out)
+# hist(appErg.data$RH_out, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$RH_out), col = "blue", lwd = 2)
+# lines(density(appErg.data$RH_out, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$RH_out)
 # 
 # 
-# hist(apperg_data$Windspeed, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$Windspeed), col = "blue", lwd = 2)
-# lines(density(apperg_data$Windspeed, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$Windspeed)
+# hist(appErg.data$Windspeed, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$Windspeed), col = "blue", lwd = 2)
+# lines(density(appErg.data$Windspeed, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$Windspeed)
 # 
 # 
-# hist(apperg_data$Visibility, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$Visibility), col = "blue", lwd = 2)
-# lines(density(apperg_data$Visibility, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$Visibility)
+# hist(appErg.data$Visibility, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$Visibility), col = "blue", lwd = 2)
+# lines(density(appErg.data$Visibility, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$Visibility)
 # 
 # 
-# hist(apperg_data$Tdewpoint, breaks = 20, prob = TRUE, col = "grey") 
-# lines(density(apperg_data$Tdewpoint), col = "blue", lwd = 2)
-# lines(density(apperg_data$Tdewpoint, adjust = 2), lty = "dotted", col = "red", lwd = 2)
-# skewness(apperg_data$Tdewpoint)
+# hist(appErg.data$Tdewpoint, breaks = 20, prob = TRUE, col = "grey") 
+# lines(density(appErg.data$Tdewpoint), col = "blue", lwd = 2)
+# lines(density(appErg.data$Tdewpoint, adjust = 2), lty = "dotted", col = "red", lwd = 2)
+# skewness(appErg.data$Tdewpoint)
 
 # observation: values in column "rv1" are identical to the ones in "rv2"
 
@@ -248,216 +252,256 @@ summary(apperg_data)
 library(missForest)
 library(magrittr)
 set.seed(123)
-apperg_data.mis_10perc <- prodNA(apperg_data[,-(1:3)], noNA = 0.1) %>% 
-  cbind(apperg_data[,1:3], .)
-#fwrite(x = apperg_data.mis_10perc, file = "apperg_data_missing_10perc.csv")
-#summary(apperg_data.mis)
+appErg.data.mis.10perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.1) %>% 
+  cbind(appErg.data[,1:3], .)
+#fwrite(x = appErg.data.mis.10perc, file = "appErg.data_missing_10perc.csv")
+#summary(appErg.data.mis)
 
 
 # Create 20% missing data in each of the columns from "T1" to "rv2"
-apperg_data.mis_20perc <- prodNA(apperg_data[,-(1:3)], noNA = 0.2) %>% 
-  cbind(apperg_data[,1:3], .)
-#fwrite(x = apperg_data.mis_20perc, file = "apperg_data_missing_20perc.csv")
+appErg.data.mis.20perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.2) %>% 
+  cbind(appErg.data[,1:3], .)
+#fwrite(x = appErg.data.mis.20perc, file = "appErg.data_missing_20perc.csv")
 
 
 # Create 30% missing data in each of the columns from "T1" to "rv2"
-apperg_data.mis_30perc <- prodNA(apperg_data[,-(1:3)], noNA = 0.3) %>% 
-  cbind(apperg_data[,1:3], .) 
-#fwrite(x = apperg_data.mis_30perc, file = "apperg_data_missing_30perc.csv")
+appErg.data.mis.30perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.3) %>% 
+  cbind(appErg.data[,1:3], .) 
+#fwrite(x = appErg.data.mis.30perc, file = "appErg.data_missing_30perc.csv")
 
 
 
 # Visualize missing values using "VIM"
 #install.packages("VIM")
 #library(VIM)
-#vim_plot <- aggr(apperg_data.mis, col = c('navyblue','yellow'),
+#vim_plot <- aggr(appErg.data.mis, col = c('navyblue','yellow'),
 #                    numbers = TRUE, sortVars = TRUE,
-#                    labels = names(apperg_data.mis), cex.axis = .7,
+#                    labels = names(appErg.data.mis), cex.axis = .7,
 #                    gap = 3, ylab = c("Missing data","Pattern"))
 
 # Visualise missing values using "mice"
 #install.packages("mice")
 #library(mice)
-#md.pattern(apperg_data.mis)
+#md.pattern(appErg.data.mis)
 
 
 # Use "mice" to impute missing values
-#apperg_data.mis <- apperg_data.mis_10perc
-#imputed_Data <- mice(data = apperg_data.mis, m = 1, maxit = 1, method = 'pmm', 
+#appErg.data.mis <- appErg.data.mis.10perc
+#imputed.data <- mice(data = appErg.data.mis, m = 1, maxit = 1, method = 'pmm', 
 #                     seed = 123, diagnostics = T)
-#summary(imputed_Data)
+#summary(imputed.data)
 
 # check imputed values
-#imputed_Data$imp$T1
+#imputed.data$imp$T1
 
 #get complete data
-#complete_Data_1 <- complete(imputed_Data, 1)
-#complete_Data_2 <- complete(imputed_Data, 2)
-#complete_Data_3 <- complete(imputed_Data, 3)
-#complete_Data_4 <- complete(imputed_Data, 4)
-#complete_Data_5 <- complete(imputed_Data, 5)
+#complete.data.1 <- complete(imputed.data, 1)
+#complete.data.2 <- complete(imputed.data, 2)
+#complete.data.3 <- complete(imputed.data, 3)
+#complete.data.4 <- complete(imputed.data, 4)
+#complete.data.5 <- complete(imputed.data, 5)
 
 # write complete data into files, if required
-#fwrite(x = complete_Data_1, file = "complete_Data_1.csv")
-#fwrite(x = complete_Data_2, file = "complete_Data_2.csv")
-#fwrite(x = complete_Data_3, file = "complete_Data_3.csv")
-#fwrite(x = complete_Data_4, file = "complete_Data_4.csv")
-#fwrite(x = complete_Data_5, file = "complete_Data_5.csv")
+#fwrite(x = complete.data.1, file = "completeData1.csv")
+#fwrite(x = complete.data.2, file = "completeData2.csv")
+#fwrite(x = complete.data.3, file = "completeData3.csv")
+#fwrite(x = complete.data.4, file = "completeData4.csv")
+#fwrite(x = complete.data.5, file = "completeData5.csv")
 
 
 # summary of completed datasets
-#summary(complete_Data_1)
-#summary(complete_Data_2)
-#summary(complete_Data_3)
-#summary(complete_Data_4)
-#summary(complete_Data_5)
+#summary(complete.data.1)
+#summary(complete.data.2)
+#summary(complete.data.3)
+#summary(complete.data.4)
+#summary(complete.data.5)
 
 
 # calculate average of these five "Complete" datasets
-#complete_Data <- rbindlist(list(complete_Data_1, complete_Data_2, complete_Data_3, complete_Data_4, complete_Data_5))[,lapply(.SD, mean), list(date, Appliances, lights)]
+#complete.data <- rbindlist(list(complete.data.1, complete.data.2, complete.data.3, complete.data.4, complete.data.5))[,lapply(.SD, mean), list(date, Appliances, lights)]
 
 # write data, if required
-#fwrite(x = complete_Data, file = "complete_Data.csv")
+#fwrite(x = complete.data, file = "completeData.csv")
 
-# Calculate RMSE(performance metric) using "mice"
-# load dataset
-apperg_data.mis <- apperg_data.mis_20perc
+
+# Missing values imputation using "mice"
+# Calculate RMSE
+appErg.data.mis <- appErg.data.mis.10perc # load dataset
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE_mice <- foreach(i = 1:50, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
+RMSE.mice <- foreach(i = 1:1, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
   
-  imputed_Data <- mice(data = apperg_data.mis, m = 5, maxit = 1, method = 'pmm')
-  complete_Data <- rbindlist(list(complete(imputed_Data, 1), 
-                                  complete(imputed_Data, 2), 
-                                  complete(imputed_Data, 3), 
-                                  complete(imputed_Data, 4), 
-                                  complete(imputed_Data, 5)))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  temp_RMSE <- caret::RMSE(apperg_data$T1,complete_Data$T1)
-  temp_RMSE
+  imputed.data <- mice(data = appErg.data.mis, m = 5, maxit = 1, method = 'pmm')
+  complete.data <- rbindlist(list(complete(imputed.data, 1), 
+                                  complete(imputed.data, 2), 
+                                  complete(imputed.data, 3), 
+                                  complete(imputed.data, 4), 
+                                  complete(imputed.data, 5)))[,lapply(.SD, mean), list(date, Appliances, lights)]
+  RMSE.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
+  RMSE.temp
   
 }
 
 stopCluster(cl) #stop cluster
-#boxplot(RMSE_mice)
+#boxplot(RMSE.mice)
+
+
 
 
 # Missing values imputation using "Amelia"
 #install.packages("Amelia")
 
 # Calculate RMSE
+appErg.data.mis <- appErg.data.mis.10perc # load dataset
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE_amelia <- foreach(i = 1:50, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+# Number of iterations can be changed using variable "i" in the code below 
+RMSE.T1.Amelia <- foreach(i = 1:1, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
   
-  amelia_fit <- amelia(apperg_data.mis, m = 5, parallel = "multicore", 
+  amelia.fit <- amelia(appErg.data.mis, m = 5, parallel = "multicore", 
                        idvars = c("date", "Appliances", "lights", "rv2"))
-  complete_Data <- rbindlist(list(amelia_fit$imputations[[1]], 
-                                  amelia_fit$imputations[[2]], 
-                                  amelia_fit$imputations[[3]], 
-                                  amelia_fit$imputations[[4]], 
-                                  amelia_fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  temp_RMSE <- caret::RMSE(apperg_data$T1,complete_Data$T1)
-  temp_RMSE
+  complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
+                                  amelia.fit$imputations[[2]], 
+                                  amelia.fit$imputations[[3]], 
+                                  amelia.fit$imputations[[4]], 
+                                  amelia.fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
+  RMSE.T1.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
+  RMSE.T1.temp
   
 }
 
 stopCluster(cl) #stop cluster
-#boxplot(RMSE_amelia)
+#boxplot(RMSE.T1.Amelia)
 
 # export the outputs to csv files, if required
-#write.amelia(amelia_fit, file.stem = "amelia_imputed_data_set")
+#write.amelia(amelia.fit, file.stem = "ameliaImputedData")
+
+
+
+
+# # Imputing missing values using "Amelia" considering data in timeseries format
+# appErg.data.mis <- appErg.data.mis.10perc # load dataset
+# # run for loops in parallel
+# cores = detectCores()
+# cl <- makeCluster(cores[1]-1) #not to overload your computer
+# registerDoParallel(cl)
+# 
+# time.series.variables <- c("T1", "RH_1", "T2", "RH_2", "T3", "RH_3", "T4", "RH_4", "T5", "RH_5",
+#                            "T6", "RH_6", "T7", "RH_7", "T8", "RH_8", "T9", "RH_9", "T_out",
+#                            "Press_mm_hg", "RH_out", "Windspeed", "Visibility", "Tdewpoint", "rv1")
+# 
+# # Number of iterations can be changed using variable "i" in the code below
+# amelia.fit <- amelia(x = appErg.data.mis, m = 5, idvars = c("date", "Appliances", "lights", "rv2"), 
+#                      ts = c("T1", "RH_1"), parallel = "snow")
+# complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
+#                                 amelia.fit$imputations[[2]], 
+#                                 amelia.fit$imputations[[3]], 
+#                                 amelia.fit$imputations[[4]], 
+#                                 amelia.fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
+# RMSE.T1.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
+# RMSE.T1.temp
 
 
 
 
 
-RMSE_all <- cbind(RMSE_amelia, RMSE_mice) %>% `colnames<-`(c("amelia", "mice"))
-boxplot.matrix(x = RMSE_all, use.cols = T, main = "RMSE for Appliances data and 20% missing data", 
+RMSE.summary <- cbind(RMSE.T1.Amelia, RMSE.mice) %>% `colnames<-`(c("amelia", "mice"))
+boxplot.matrix(x = RMSE.summary, use.cols = T, main = "RMSE for Appliances data and 10% missing data", 
                ylab = "RMSE") # boxplot
 # convert "RMSE_all" from matrix to data.frame and save it
-as.data.frame(RMSE_all) %>% fwrite(file = "RMSE_all_20perc.csv")
+as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
 
 
 
 
-# Missing values imputation using "missForest"
-#install.packages("missForest")
-library(missForest)
-# Calculate RMSE
-# run for loops in parallel
-cores = detectCores()
-cl <- makeCluster(cores[1]-1) #not to overload your computer
-registerDoParallel(cl)
-
-apperg_data.imp <- missForest(xmis = apperg_data.mis[,-(1:3)])
-
-#check imputed values
-apperg_data.imp$ximp
-
-#check imputation error
-apperg_data.imp$OOBerror
-
-#comparing actual data accuracy
-apperg_data.err <- mixError(apperg_data.imp$ximp, apperg_data.mis, apperg_data)
-apperg_data.err
+# # Missing values imputation using "missForest"
+# appErg.data.mis <- appErg.data.mis.10perc # load dataset
+# #install.packages("missForest")
+# library(missForest)
+# 
+# # Calculate RMSE
+# # run for loops in parallel
+# cores = detectCores()
+# cl <- makeCluster(cores[1]-1) #not to overload your computer
+# registerDoParallel(cl)
+# 
+# appErg.data.imp <- missForest(xmis = appErg.data.mis[,-(1:3)])
+# 
+# #check imputed values
+# appErg.data.imp$ximp
+# 
+# #check imputation error
+# appErg.data.imp$OOBerror
+# 
+# #comparing actual data accuracy
+# appErg.data.err <- mixError(appErg.data.imp$ximp, appErg.data.mis, appErg.data)
+# appErg.data.err
 
 
 
 
 # Missing values imputation using "Hmisc"
+appErg.data.mis <- appErg.data.mis.10perc # load dataset
 #install.packages("Hmisc")
 library(Hmisc)
 
-# load dataset
-apperg_data.mis <- apperg_data.mis_10perc
-
 # impute with mean value
-imputed_T1_mean <- impute(apperg_data.mis$T1, fun = mean)
-RMSE_mean <- caret::RMSE(pred = imputed_T1_mean, obs = apperg_data$T1)
-RMSE_mean # 0.4980051
+imputed.T1.mean <- impute(appErg.data.mis$T1, fun = mean)
+RMSE.mean <- caret::RMSE(pred = imputed.T1.mean, obs = appErg.data$T1)
+RMSE.mean # 0.4980051
 
 # impute with median value
-imputed_T1_median <- impute(apperg_data.mis$T1, fun = median)
-RMSE_median <- caret::RMSE(pred = imputed_T1_median, obs = apperg_data$T1)
-RMSE_median # 0.4986006
+imputed.T1.median <- impute(appErg.data.mis$T1, fun = median)
+RMSE.median <- caret::RMSE(pred = imputed.T1.median, obs = appErg.data$T1)
+RMSE.median # 0.4986006
 
 # impute with minimum value
-imputed_T1_min <- impute(apperg_data.mis$T1, fun = min)
-RMSE_min <- caret::RMSE(pred = imputed_T1_min, obs = apperg_data$T1)
-RMSE_min # 1.63321
+imputed.T1.min <- impute(appErg.data.mis$T1, fun = min)
+RMSE.min <- caret::RMSE(pred = imputed.T1.min, obs = appErg.data$T1)
+RMSE.min # 1.63321
 
 # impute with maximum value
-imputed_T1_max <- impute(apperg_data.mis$T1, fun = max)
-RMSE_max <- caret::RMSE(pred = imputed_T1_max, obs = apperg_data$T1)
-RMSE_max # 1.541201
+imputed.T1.max <- impute(appErg.data.mis$T1, fun = max)
+RMSE.max <- caret::RMSE(pred = imputed.T1.max, obs = appErg.data$T1)
+RMSE.max # 1.541201
 
 # impute with random value
-imputed_T1_random <- impute(apperg_data.mis$T1, fun = 'random')
-RMSE_median <- caret::RMSE(pred = imputed_T1_random, obs = apperg_data$T1)
-RMSE_median
+imputed.T1.random <- impute(appErg.data.mis$T1, fun = 'random')
+RMSE.median <- caret::RMSE(pred = imputed.T1.random, obs = appErg.data$T1)
+RMSE.median
 
 #using argImpute
-imputed_arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
+imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
                             RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
                             T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint +
-                            rv1, data = apperg_data.mis, n.impute = 5)
-imputed_arg
+                            rv1, data = appErg.data.mis, n.impute = 5)
+imputed.arg
 
-imputed_arg$imputed$T1 <- impute_arg$imputed$T1 %>% as.data.frame()
-RMSE <- caret::RMSE(pred = imputed_arg$imputed$T1, obs = apperg_data$T1)
-RMSE # 2.279437
+imputed.arg$imputed$T1 <- imputed.arg$imputed$T1 %>% as.data.frame()
+RMSE.T1 <- caret::RMSE(pred = imputed.arg$imputed$T1, obs = appErg.data$T1)
+RMSE.T1 # 2.209185
 
 
 
-# Missing values imputation using "Hmisc"
-#install.packages("mi")
-library(mi)
 
-#imputing missing value with mi
-apperg_data.imp <- mi(apperg_data.mis[,-(1:3)], seed = 123)
+# # Missing values imputation using "mi"
+# appErg.data.mis <- appErg.data.mis.10perc # load dataset
+# #install.packages("mi")
+# library(mi)
+# 
+# 
+# #imputing missing value with mi
+# appErg.data.imp <- mi(appErg.data.mis, seed = 123)
+# 
+# 
+# # MAPE (Performance Metric)
+# # Mean Absolute Percentage Error
+# #rowMeans(abs((actual-predicted)/actual) * 100)
+# #install.packages("MLmetrics")
+# #MLmetrics::MAPE(appErg.data$T1, appErg.data$T1)  
