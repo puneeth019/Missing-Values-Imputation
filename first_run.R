@@ -1,3 +1,9 @@
+# ----------------------------------------------------------------------------------
+# This R code is a demonstration for multivaraite missing value imputation packages
+# mice, Amelia, missForest, Hmisc, mtsdi, imputeR and VIM for cross-sectional data.
+# ----------------------------------------------------------------------------------
+
+
 #setwd(dir = "D:/DA/PGDBA/cummins_internship/project/datasets")
 
 # Code to impute missing values using various existing imputation pacakges
@@ -483,27 +489,27 @@ appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 library(Hmisc)
 
 # impute with mean value
-imputed.T1.mean <- impute(appErg.data.mis$T1, fun = mean)
+imputed.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% as.data.frame()
 RMSE.mean <- caret::RMSE(pred = imputed.T1.mean, obs = appErg.data$T1)
-RMSE.mean # 0.4980051
+RMSE.mean # 0.3837814
 
 # impute with median value
-imputed.T1.median <- impute(appErg.data.mis$T1, fun = median)
+imputed.T1.median <- impute(appErg.data.mis$T1, fun = median) %>% as.data.frame()
 RMSE.median <- caret::RMSE(pred = imputed.T1.median, obs = appErg.data$T1)
-RMSE.median # 0.4986006
+RMSE.median # 0.3856154
 
 # impute with minimum value
-imputed.T1.min <- impute(appErg.data.mis$T1, fun = min)
+imputed.T1.min <- impute(appErg.data.mis$T1, fun = min) %>% as.data.frame()
 RMSE.min <- caret::RMSE(pred = imputed.T1.min, obs = appErg.data$T1)
-RMSE.min # 1.63321
+RMSE.min # 1.390827
 
 # impute with maximum value
-imputed.T1.max <- impute(appErg.data.mis$T1, fun = max)
+imputed.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% as.data.frame()
 RMSE.max <- caret::RMSE(pred = imputed.T1.max, obs = appErg.data$T1)
-RMSE.max # 1.541201
+RMSE.max # 1.016792
 
 # impute with random value
-imputed.T1.random <- impute(appErg.data.mis$T1, fun = 'random')
+imputed.T1.random <- impute(appErg.data.mis$T1, fun = 'random') %>% as.data.frame()
 RMSE.median <- caret::RMSE(pred = imputed.T1.random, obs = appErg.data$T1)
 RMSE.median
 
