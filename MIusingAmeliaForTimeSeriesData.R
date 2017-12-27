@@ -91,6 +91,9 @@ library(magrittr)
 set.seed(123)
 appErg.data.mis.10perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.1) %>% 
   cbind(appErg.data[,1:3], .)
+
+
+
 #fwrite(x = appErg.data.mis.10perc, file = "appErg.data_missing_10perc.csv")
 #summary(appErg.data.mis)
 
@@ -101,14 +104,41 @@ appErg.data.mis <- appErg.data.mis.10perc # load dataset
 # convert "date" into "POSIXct" format
 appErg.data.mis$date <- as.POSIXct(x = appErg.data.mis$date)
 
+
+
+# Split the data into train(70%) and test(30%) random
+set.seed(123)
+train <- sample(nrow(appErg.data.mis), 0.7*nrow(appErg.data.mis), replace = FALSE)
+appErg.data.mis.Train <- appErg.data.mis[train,]
+appErg.data.mis.Test <- appErg.data.mis[-train,]
+
+
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-# Number of iterations can be changed using variable "i" in the code below
-amelia.fit <- amelia(x = appErg.data.mis, m = 5, idvars = c("Appliances", "lights", "rv2"),
-                     ts = "date", cs = "Appliances", parallel = "snow")
+amelia.fit.ts <- amelia(x = appErg.data.mis, m = 5,
+                     ts = "date", parallel = "snow")
+complete.data <- rbindlist(list(amelia.fit.ts$imputations[[1]],
+                                amelia.fit.ts$imputations[[2]],
+                                amelia.fit.ts$imputations[[3]],
+                                amelia.fit.ts$imputations[[4]],
+                                amelia.fit.ts$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
+RMSE.T1.ts.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
+RMSE.T1.ts.temp
+
+stopCluster(cl) #stop cluster
+
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+
+amelia.fit <- amelia(x = appErg.data.mis, m = 5, idvars = "date",
+                     parallel = "snow")
 complete.data <- rbindlist(list(amelia.fit$imputations[[1]],
                                 amelia.fit$imputations[[2]],
                                 amelia.fit$imputations[[3]],
@@ -118,3 +148,5 @@ RMSE.T1.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
 RMSE.T1.temp
 
 stopCluster(cl) #stop cluster
+
+
