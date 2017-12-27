@@ -35,6 +35,7 @@ library(DMwR)
 library(VIM)
 
 # Packages to impute missing values for Time series data
+library(mtsdi)
 library(imputeTS)
 library(zoo)
 library(forecast)
@@ -51,7 +52,7 @@ library(xts)
 
 url.data <- c("https://archive.ics.uci.edu/ml/machine-learning-databases/00374/energydata_complete.csv")
 appErg.data <- fread(input = url.data)
-
+# Can use colClasses in the above line
 
 
 # Exploratory Data Analysis (EDA)
@@ -61,6 +62,9 @@ str(appErg.data)
 
 #Look for missing data
 sum(is.na(appErg.data)) # None found
+
+
+
 
 # convert classes to "numeric" wherever required
 appErg.data$Appliances <- as.numeric(appErg.data$Appliances)
@@ -248,85 +252,101 @@ summary(appErg.data)
 # observation: values in column "rv1" are identical to the ones in "rv2"
 
 
-# Create 10% missing data in each of the columns from "T1" to "rv2"
+# Splitting into train and test sets - 70:30 in order
+set.seed(123)
+trainIndex <- floor(x = 0.7*nrow(appErg.data))
+appErg.data.Train <- appErg.data[1:trainIndex, ] # 13,814 observations in train set
+appErg.data.Test <- appErg.data[(trainIndex+1):nrow(appErg.data), ] # 5,921 observations in test set
+
+
+
+# Create 10% missing data in each of the columns except "date"
 library(missForest)
 library(magrittr)
 set.seed(123)
-appErg.data.mis.10perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.1) %>% 
-  cbind(appErg.data[,1:3], .)
-#fwrite(x = appErg.data.mis.10perc, file = "appErg.data_missing_10perc.csv")
-#summary(appErg.data.mis)
+appErg.data.Train.mis.10perc <- prodNA(appErg.data.Train[ ,-1], noNA = 0.1) %>% 
+  cbind(appErg.data.Train[ ,1], .)
+
+#fwrite(x = appErg.data.Train.mis.10perc, file = "appErg_data_Train_mis_10perc.csv")
+#summary(appErg.data.Train.mis.10perc)
 
 
-# Create 20% missing data in each of the columns from "T1" to "rv2"
-appErg.data.mis.20perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.2) %>% 
-  cbind(appErg.data[,1:3], .)
-#fwrite(x = appErg.data.mis.20perc, file = "appErg.data_missing_20perc.csv")
+# Create 20% missing data in each of the columns except "date"
+appErg.data.Train.mis.20perc <- prodNA(appErg.data.Train[ ,-1], noNA = 0.2) %>% 
+  cbind(appErg.data.Train[ ,1], .)
+#fwrite(x = appErg.data.Train.mis.20perc, file = "appErg_data_Train_mis_20perc.csv")
 
 
-# Create 30% missing data in each of the columns from "T1" to "rv2"
-appErg.data.mis.30perc <- prodNA(appErg.data[,-(1:3)], noNA = 0.3) %>% 
-  cbind(appErg.data[,1:3], .) 
-#fwrite(x = appErg.data.mis.30perc, file = "appErg.data_missing_30perc.csv")
+# Create 30% missing data in each of the columns except "date"
+appErg.data.Train.mis.30perc <- prodNA(appErg.data.Train[ ,-1], noNA = 0.3) %>% 
+  cbind(appErg.data.Train[ ,1], .) 
+#fwrite(x = appErg.data.Train.mis.30perc, file = "appErg_data_Train_mis_30perc.csv")
 
 
 
-# Visualize missing values using "VIM"
-#install.packages("VIM")
-#library(VIM)
-#vim_plot <- aggr(appErg.data.mis, col = c('navyblue','yellow'),
-#                    numbers = TRUE, sortVars = TRUE,
-#                    labels = names(appErg.data.mis), cex.axis = .7,
-#                    gap = 3, ylab = c("Missing data","Pattern"))
+# # Visualize missing values using "VIM" package
+# install.packages("VIM")
+# library(VIM)
+# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+# vim_plot <- aggr(appErg.data.mis, col = c('navyblue','yellow'),
+#                     numbers = TRUE, sortVars = TRUE,
+#                     labels = names(appErg.data.mis), cex.axis = .7,
+#                     gap = 3, ylab = c("Missing data","Pattern"))
+# 
+# 
+# # Visualise missing values using "mice" package
+# install.packages("mice")
+# library(mice)
+# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+# md.pattern(appErg.data.mis)
+#
+#
+# # Use "mice" to impute missing values
+# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+# imputed.data <- mice(data = appErg.data.mis, m = 5, maxit = 1, method = 'pmm', 
+#                      seed = 123, diagnostics = T)
+# summary(imputed.data)
+# 
+# # check imputed values
+# imputed.data$imp$T1
+# 
+# # get complete data
+# complete.data.1 <- mice::complete(imputed.data, 1)
+# complete.data.2 <- mice::complete(imputed.data, 2)
+# complete.data.3 <- mice::complete(imputed.data, 3)
+# complete.data.4 <- mice::complete(imputed.data, 4)
+# complete.data.5 <- mice::complete(imputed.data, 5)
+# 
+# # write complete data into files, if required
+# fwrite(x = complete.data.1, file = "completeData1.csv")
+# fwrite(x = complete.data.2, file = "completeData2.csv")
+# fwrite(x = complete.data.3, file = "completeData3.csv")
+# fwrite(x = complete.data.4, file = "completeData4.csv")
+# fwrite(x = complete.data.5, file = "completeData5.csv")
+# 
+# 
+# # summary of completed datasets
+# summary(complete.data.1)
+# summary(complete.data.2)
+# summary(complete.data.3)
+# summary(complete.data.4)
+# summary(complete.data.5)
+# 
+# 
+# # calculate average of these five "Complete" datasets
+# complete.data <- rbindlist(list(complete.data.1, complete.data.2, complete.data.3, complete.data.4, complete.data.5))[,lapply(.SD, mean), list(date, Appliances, lights)]
+# 
+# # write data, if required
+# fwrite(x = complete.data, file = "completeData.csv")
 
-# Visualise missing values using "mice"
-#install.packages("mice")
-#library(mice)
-#md.pattern(appErg.data.mis)
-
-
-# Use "mice" to impute missing values
-#appErg.data.mis <- appErg.data.mis.10perc
-#imputed.data <- mice(data = appErg.data.mis, m = 1, maxit = 1, method = 'pmm', 
-#                     seed = 123, diagnostics = T)
-#summary(imputed.data)
-
-# check imputed values
-#imputed.data$imp$T1
-
-#get complete data
-#complete.data.1 <- complete(imputed.data, 1)
-#complete.data.2 <- complete(imputed.data, 2)
-#complete.data.3 <- complete(imputed.data, 3)
-#complete.data.4 <- complete(imputed.data, 4)
-#complete.data.5 <- complete(imputed.data, 5)
-
-# write complete data into files, if required
-#fwrite(x = complete.data.1, file = "completeData1.csv")
-#fwrite(x = complete.data.2, file = "completeData2.csv")
-#fwrite(x = complete.data.3, file = "completeData3.csv")
-#fwrite(x = complete.data.4, file = "completeData4.csv")
-#fwrite(x = complete.data.5, file = "completeData5.csv")
-
-
-# summary of completed datasets
-#summary(complete.data.1)
-#summary(complete.data.2)
-#summary(complete.data.3)
-#summary(complete.data.4)
-#summary(complete.data.5)
-
-
-# calculate average of these five "Complete" datasets
-#complete.data <- rbindlist(list(complete.data.1, complete.data.2, complete.data.3, complete.data.4, complete.data.5))[,lapply(.SD, mean), list(date, Appliances, lights)]
-
-# write data, if required
-#fwrite(x = complete.data, file = "completeData.csv")
 
 
 # Missing values imputation using "mice"
+#install.packages("mice")
+library(mice)
 # Calculate RMSE
-appErg.data.mis <- appErg.data.mis.10perc # load dataset
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
@@ -340,8 +360,8 @@ RMSE.mice <- foreach(i = 1:1, .combine = rbind, .packages = c("mice", "data.tabl
                                   complete(imputed.data, 3), 
                                   complete(imputed.data, 4), 
                                   complete(imputed.data, 5)))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  RMSE.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
-  RMSE.temp
+  RMSE.T1.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
+  RMSE.T1.temp
   
 }
 
@@ -353,9 +373,11 @@ stopCluster(cl) #stop cluster
 
 # Missing values imputation using "Amelia"
 #install.packages("Amelia")
+library(Amelia)
 
 # Calculate RMSE
-appErg.data.mis <- appErg.data.mis.10perc # load dataset
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
@@ -364,8 +386,9 @@ registerDoParallel(cl)
 # Number of iterations can be changed using variable "i" in the code below 
 RMSE.T1.Amelia <- foreach(i = 1:1, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
   
-  amelia.fit <- amelia(appErg.data.mis, m = 5, parallel = "multicore", 
-                       idvars = c("date", "Appliances", "lights", "rv2"))
+  amelia.fit <- amelia(appErg.data.mis, m = 5, parallel = "snow", 
+                       idvars = c("date", "rv2"))
+  # "rv2" is also idvar because the value in this column are same as "rv1"
   complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
                                   amelia.fit$imputations[[2]], 
                                   amelia.fit$imputations[[3]], 
@@ -385,45 +408,53 @@ stopCluster(cl) #stop cluster
 
 
 
-# # Imputing missing values using "Amelia" considering data in timeseries format
-# appErg.data.mis <- appErg.data.mis.10perc # load dataset
-# # run for loops in parallel
-# cores = detectCores()
-# cl <- makeCluster(cores[1]-1) #not to overload your computer
-# registerDoParallel(cl)
-# 
-# time.series.variables <- c("T1", "RH_1", "T2", "RH_2", "T3", "RH_3", "T4", "RH_4", "T5", "RH_5",
-#                            "T6", "RH_6", "T7", "RH_7", "T8", "RH_8", "T9", "RH_9", "T_out",
-#                            "Press_mm_hg", "RH_out", "Windspeed", "Visibility", "Tdewpoint", "rv1")
-# 
-# # Number of iterations can be changed using variable "i" in the code below
-# amelia.fit <- amelia(x = appErg.data.mis, m = 5, idvars = c("date", "Appliances", "lights", "rv2"), 
-#                      ts = c("T1", "RH_1"), parallel = "snow")
-# complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
-#                                 amelia.fit$imputations[[2]], 
-#                                 amelia.fit$imputations[[3]], 
-#                                 amelia.fit$imputations[[4]], 
-#                                 amelia.fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
-# RMSE.T1.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
-# RMSE.T1.temp
+# Imputing missing values using "Amelia" considering data in timeseries format
+#install.packages("Amelia")
+library(Amelia)
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
+# convert "date" into "POSIXct" format
+appErg.data.mis$date <- as.POSIXct(x = appErg.data.mis$date)
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+# Number of iterations can be changed using variable "i" in the code below
+RMSE.T1.Amelia.ts <- foreach(i = 1:1, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+  
+  amelia.fit.ts <- amelia(x = appErg.data.mis, m = 5,
+                       ts = "date", parallel = "snow")
+  # "rv2" is also idvar because the value in this column are same as "rv1"
+  complete.data <- rbindlist(list(amelia.fit.ts$imputations[[1]],
+                                  amelia.fit.ts$imputations[[2]],
+                                  amelia.fit.ts$imputations[[3]],
+                                  amelia.fit.ts$imputations[[4]],
+                                  amelia.fit.ts$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
+  RMSE.T1.ts.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
+  RMSE.T1.ts.temp
+ 
+}
+
+stopCluster(cl) #stop cluster
+#boxplot(RMSE.T1.Amelia.ts)
 
 
-
-
-
-RMSE.summary <- cbind(RMSE.T1.Amelia, RMSE.mice) %>% `colnames<-`(c("amelia", "mice"))
+RMSE.summary <- cbind(RMSE.mice, RMSE.T1.Amelia, RMSE.T1.Amelia.ts) %>% `colnames<-`(c("mice", "amelia", "amelia.ts"))
 boxplot.matrix(x = RMSE.summary, use.cols = T, main = "RMSE for Appliances data and 10% missing data", 
                ylab = "RMSE") # boxplot
 # convert "RMSE_all" from matrix to data.frame and save it
-as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
+#as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
 
 
 
 
 # # Missing values imputation using "missForest"
-# appErg.data.mis <- appErg.data.mis.10perc # load dataset
 # #install.packages("missForest")
 # library(missForest)
+# 
+# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 # 
 # # Calculate RMSE
 # # run for loops in parallel
@@ -431,7 +462,7 @@ as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
 # cl <- makeCluster(cores[1]-1) #not to overload your computer
 # registerDoParallel(cl)
 # 
-# appErg.data.imp <- missForest(xmis = appErg.data.mis[,-(1:3)])
+# appErg.data.imp <- missForest(xmis = appErg.data.mis[ ,-1])
 # 
 # #check imputed values
 # appErg.data.imp$ximp
@@ -447,7 +478,7 @@ as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
 
 
 # Missing values imputation using "Hmisc"
-appErg.data.mis <- appErg.data.mis.10perc # load dataset
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 #install.packages("Hmisc")
 library(Hmisc)
 
@@ -491,7 +522,7 @@ RMSE.T1 # 2.209185
 
 
 # # Missing values imputation using "mi"
-# appErg.data.mis <- appErg.data.mis.10perc # load dataset
+# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 # #install.packages("mi")
 # library(mi)
 # 
