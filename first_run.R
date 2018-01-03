@@ -4,7 +4,7 @@
 # ----------------------------------------------------------------------------------
 
 
-#setwd(dir = "D:/DA/PGDBA/cummins_internship/project/datasets")
+setwd(dir = "D:/DA/PGDBA/cummins_internship/project/datasets")
 
 # Code to impute missing values using various existing imputation pacakges
 
@@ -57,7 +57,8 @@ library(xts)
 # https://archive.ics.uci.edu/ml/datasets/Appliances+energy+prediction
 
 url.data <- c("https://archive.ics.uci.edu/ml/machine-learning-databases/00374/energydata_complete.csv")
-appErg.data <- fread(input = url.data)
+#appErg.data <- fread(input = url.data)
+appErg.data <- fread(input = "energydata_complete.csv")
 # Can use colClasses in the above line
 
 
@@ -456,31 +457,36 @@ boxplot.matrix(x = RMSE.summary, use.cols = T, main = "RMSE for Appliances data 
 
 
 
-# # Missing values imputation using "missForest"
-# #install.packages("missForest")
-# library(missForest)
-# 
-# appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
-# 
-# # Calculate RMSE
-# # run for loops in parallel
-# cores = detectCores()
-# cl <- makeCluster(cores[1]-1) #not to overload your computer
-# registerDoParallel(cl)
-# 
-# appErg.data.imp <- missForest(xmis = appErg.data.mis[ ,-1])
-# 
-# #check imputed values
-# appErg.data.imp$ximp
-# 
-# #check imputation error
-# appErg.data.imp$OOBerror
-# 
-# #comparing actual data accuracy
-# appErg.data.err <- mixError(appErg.data.imp$ximp, appErg.data.mis, appErg.data)
-# appErg.data.err
+# Missing values imputation using "missForest"
+#install.packages("missForest")
+library(missForest)
 
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
+# Calculate RMSE
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+appErg.data.imp <- missForest(xmis = appErg.data.mis[ ,-1], maxiter = 2, 
+                              ntree = 50, mtry = 6)
+
+stopCluster(cl) #stop cluster
+
+#check imputed values
+appErg.data.imp$ximp
+
+#check imputation error
+appErg.data.imp$OOBerror
+
+#comparing actual data accuracy
+appErg.data.err <- mixError(appErg.data.imp$ximp, appErg.data.mis, appErg.data)
+appErg.data.err
+
+RMSE.T1.missF <- caret::RMSE(pred = appErg.data.imp$ximp$T1 %>% as.data.frame(), 
+                                   obs = appErg.data$T1)
+RMSE.T1.aregI.missF # 1.977089
 
 
 # Missing values imputation using "Hmisc"
@@ -489,29 +495,29 @@ appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 library(Hmisc)
 
 # impute with mean value
-imputed.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% as.data.frame()
-RMSE.mean <- caret::RMSE(pred = imputed.T1.mean, obs = appErg.data$T1)
-RMSE.mean # 0.3837814
+RMSE.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data$T1)
+RMSE.T1.mean # 0.3837814
 
 # impute with median value
-imputed.T1.median <- impute(appErg.data.mis$T1, fun = median) %>% as.data.frame()
-RMSE.median <- caret::RMSE(pred = imputed.T1.median, obs = appErg.data$T1)
-RMSE.median # 0.3856154
+RMSE.T1.median <- impute(appErg.data.mis$T1, fun = median) %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data$T1)
+RMSE.T1.median # 0.3856154
 
 # impute with minimum value
-imputed.T1.min <- impute(appErg.data.mis$T1, fun = min) %>% as.data.frame()
-RMSE.min <- caret::RMSE(pred = imputed.T1.min, obs = appErg.data$T1)
-RMSE.min # 1.390827
+RMSE.T1.min <- impute(appErg.data.mis$T1, fun = min) %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data$T1)
+RMSE.T1.min # 1.390827
 
 # impute with maximum value
-imputed.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% as.data.frame()
-RMSE.max <- caret::RMSE(pred = imputed.T1.max, obs = appErg.data$T1)
-RMSE.max # 1.016792
+RMSE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data$T1)
+RMSE.T1.max # 1.016792
 
 # impute with random value
-imputed.T1.random <- impute(appErg.data.mis$T1, fun = 'random') %>% as.data.frame()
-RMSE.median <- caret::RMSE(pred = imputed.T1.random, obs = appErg.data$T1)
-RMSE.median
+RMSE.T1.median <- impute(appErg.data.mis$T1, fun = 'random') %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data$T1)
+RMSE.T1.median
 
 #using argImpute
 imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
@@ -519,10 +525,9 @@ imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
                             T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint +
                             rv1, data = appErg.data.mis, n.impute = 5)
 imputed.arg
-
-imputed.arg$imputed$T1 <- imputed.arg$imputed$T1 %>% as.data.frame()
-RMSE.T1 <- caret::RMSE(pred = imputed.arg$imputed$T1, obs = appErg.data$T1)
-RMSE.T1 # 2.209185
+RMSE.T1.aregI.hmisc <- caret::RMSE(pred = imputed.arg$imputed$T1 %>% as.data.frame(), 
+                       obs = appErg.data$T1)
+RMSE.T1.aregI.hmisc # 1.977089
 
 
 
@@ -542,3 +547,98 @@ RMSE.T1 # 2.209185
 # #rowMeans(abs((actual-predicted)/actual) * 100)
 # #install.packages("MLmetrics")
 # #MLmetrics::MAPE(appErg.data$T1, appErg.data$T1)  
+
+
+#imputing missing value with "mtsdi"
+#install.packages("mtsdi")
+library(mtsdi)
+# Calculate RMSE
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
+# Multivariate Normal Imputation
+appErg.data.mtsdi <- mnimput(formula = ~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
+                               RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
+                               T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint +
+                               rv1, dataset = appErg.data.mis, maxit = 1E2, ts = TRUE, 
+                             method = "spline")
+
+appErg.data.imp <- appErg.data.mtsdi$filled.dataset # Imputed dataset
+RMSE.T1.mtsdi <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                             obs = appErg.data$T1)
+RMSE.T1.mtsdi # 0.07661691
+
+
+
+
+#imputing missing value with "VIM"
+#install.packages("VIM")
+library(VIM)
+# Calculate RMSE
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
+### Hot Deck Imputation using "VIM"
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+# Number of iterations can be changed using variable "i" in the code below
+RMSE.T1.VIM.hotdeck <- foreach(i = 1:10, .combine = rbind, .packages = c("VIM", "magrittr", "caret")) %dopar% {
+  
+  appErg.data.imp <- VIM::hotdeck(data = appErg.data.mis)
+  RMSE.T1.temp <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                              obs = appErg.data$T1)
+  RMSE.T1.temp
+  
+}
+
+stopCluster(cl) #stop cluster
+boxplot(RMSE.T1.VIM.hotdeck)
+
+
+### k-Nearest neighbour imputation using "VIM"
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+appErg.data.imp <- VIM::kNN(data = appErg.data.mis, k = 5, numFun = median, 
+                            dist_var = colnames(appErg.data.imp)[-1])
+RMSE.T1.VIM.kNN <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                                   obs = appErg.data$T1)
+RMSE.T1.VIM.kNN # 0.1889839
+
+stopCluster(cl) #stop cluster
+boxplot(RMSE.T1.VIM.kNN)
+
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+appErg.data.imp <- irmi(x = appErg.data.mis, maxit = 5, mi = 1, 
+                        init.method = "median", robust = T, step = T, 
+                        robMethod = "MM", 
+                        modelFormulas = list(T1 = colnames(appErg.data.mis[-4])))
+
+stopCluster(cl) #stop cluster
+
+
+### Imputation using "Individual Regression Imputation" in "VIM"
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+form.T1 <- T1 ~ T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
+  RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
+  T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint + rv1
+appErg.data.imp$T1 <- regressionImp(formula = form.T1, data = appErg.data.mis)
+RMSE.T1.VIM.IRI <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                               obs = appErg.data$T1)
+RMSE.T1.VIM.IRI
+
+stopCluster(cl) #stop cluster
+
