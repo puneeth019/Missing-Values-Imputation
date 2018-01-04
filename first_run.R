@@ -350,8 +350,6 @@ appErg.data.Train.mis.30perc <- prodNA(appErg.data.Train[ ,-1], noNA = 0.3) %>%
 
 # Missing values imputation using "mice"
 #install.packages("mice")
-library(mice)
-# Calculate RMSE
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
 # run for loops in parallel
@@ -359,30 +357,34 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-RMSE.mice <- foreach(i = 1:1, .combine = rbind, .packages = c("mice", "data.table", "caret")) %dopar% {
+pack.list <- c("mice", "data.table", "MLmetrics", "caret")
+#ncol(appErg.data.mis)-3
+PM.mice <- foreach(i = 4:5, .combine = cbind, .packages = c("foreach")) %dopar% {
   
-  imputed.data <- mice(data = appErg.data.mis, m = 5, maxit = 1, method = 'pmm')
-  complete.data <- rbindlist(list(complete(imputed.data, 1), 
-                                  complete(imputed.data, 2), 
-                                  complete(imputed.data, 3), 
-                                  complete(imputed.data, 4), 
-                                  complete(imputed.data, 5)))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  RMSE.T1.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
-  RMSE.T1.temp
+  PM.variable <- foreach(j = 1:3, .combine = rbind, .packages = pack.list) %dopar% {
+    
+    imputed.data <- mice(data = appErg.data.mis, m = 5, maxit = 1, method = 'pmm')
+    complete.data <- rbindlist(list(complete(imputed.data, 1), 
+                                    complete(imputed.data, 2), 
+                                    complete(imputed.data, 3), 
+                                    complete(imputed.data, 4), 
+                                    complete(imputed.data, 5)))[,lapply(.SD, mean), list(date)]
+    RMSE.T1.temp <- caret::RMSE(complete.data$T1, appErg.data.Train$T1)
+    MAPE.T1.temp <- MLmetrics::MAPE(complete.data$T1, appErg.data.Train$T1)
+    c(RMSE.T1.temp, MAPE.T1.temp)
+    
+  }
+  PM.variable
   
 }
 
 stopCluster(cl) #stop cluster
-#boxplot(RMSE.mice)
-
+PM.mice
 
 
 
 # Missing values imputation using "Amelia"
 #install.packages("Amelia")
-library(Amelia)
-
-# Calculate RMSE
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
 # run for loops in parallel
@@ -390,36 +392,41 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-# Number of iterations can be changed using variable "i" in the code below 
-RMSE.T1.Amelia <- foreach(i = 1:1, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+pack.list <- c("Amelia", "data.table", "MLmetrics", "caret")
+#ncol(appErg.data.mis)-3
+PM.Amelia <- foreach(i = 4:5, .combine = cbind, .packages = c("foreach")) %dopar% {
   
-  amelia.fit <- amelia(appErg.data.mis, m = 5, parallel = "snow", 
-                       idvars = c("date", "rv2"))
-  # "rv2" is also idvar because the value in this column are same as "rv1"
-  complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
-                                  amelia.fit$imputations[[2]], 
-                                  amelia.fit$imputations[[3]], 
-                                  amelia.fit$imputations[[4]], 
-                                  amelia.fit$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  RMSE.T1.temp <- caret::RMSE(appErg.data$T1,complete.data$T1)
-  RMSE.T1.temp
+  PM.variable <- foreach(j = 1:2, .combine = rbind, .packages = pack.list) %dopar% {
+    
+    amelia.fit <- amelia(appErg.data.mis, m = 5, parallel = "snow", idvars = c("date", "rv2"))
+    # "rv2" is also idvar because the value in this column are same as "rv1"
+    complete.data <- rbindlist(list(amelia.fit$imputations[[1]], 
+                                    amelia.fit$imputations[[2]], 
+                                    amelia.fit$imputations[[3]], 
+                                    amelia.fit$imputations[[4]], 
+                                    amelia.fit$imputations[[3]]))[,lapply(.SD, mean), list(date)]
+    RMSE.temp <- caret::RMSE(complete.data[[i]], appErg.data.Train[[i]])
+    MAPE.temp <- MLmetrics::MAPE(complete.data[[i]], appErg.data.Train[[i]])
+    c(RMSE.temp, MAPE.temp)
+    
+  }
+  PM.variable
   
 }
 
 stopCluster(cl) #stop cluster
-#boxplot(RMSE.T1.Amelia)
+PM.Amelia
 
-# export the outputs to csv files, if required
-#write.amelia(amelia.fit, file.stem = "ameliaImputedData")
+# # export the outputs to csv files, if required
+# #write.amelia(amelia.fit, file.stem = "ameliaImputedData")
 
 
 
 
 # Imputing missing values using "Amelia" considering data in timeseries format
 #install.packages("Amelia")
-library(Amelia)
-appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 # convert "date" into "POSIXct" format
 appErg.data.mis$date <- as.POSIXct(x = appErg.data.mis$date)
 
@@ -428,31 +435,47 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-# Number of iterations can be changed using variable "i" in the code below
-RMSE.T1.Amelia.ts <- foreach(i = 1:1, .combine = rbind, .packages = c("Amelia", "data.table", "caret")) %dopar% {
+pack.list <- c("Amelia", "data.table", "MLmetrics", "caret")
+#ncol(appErg.data.mis)-3
+PM.Amelia.ts <- foreach(i = 4:5, .combine = cbind, .packages = c("foreach")) %dopar% {
   
-  amelia.fit.ts <- amelia(x = appErg.data.mis, m = 5,
-                       ts = "date", parallel = "snow")
-  # "rv2" is also idvar because the value in this column are same as "rv1"
-  complete.data <- rbindlist(list(amelia.fit.ts$imputations[[1]],
-                                  amelia.fit.ts$imputations[[2]],
-                                  amelia.fit.ts$imputations[[3]],
-                                  amelia.fit.ts$imputations[[4]],
-                                  amelia.fit.ts$imputations[[3]]))[,lapply(.SD, mean), list(date, Appliances, lights)]
-  RMSE.T1.ts.temp <- caret::RMSE(appErg.data$T1, complete.data$T1)
-  RMSE.T1.ts.temp
- 
+  PM.variable <- foreach(j = 1:3, .combine = rbind, .packages = pack.list) %dopar% {
+    
+    amelia.fit.ts <- amelia(x = appErg.data.mis, m = 5,
+                            ts = "date", parallel = "snow")
+    # "rv2" is also idvar because the value in this column are same as "rv1"
+    complete.data <- rbindlist(list(amelia.fit.ts$imputations[[1]],
+                                    amelia.fit.ts$imputations[[2]],
+                                    amelia.fit.ts$imputations[[3]],
+                                    amelia.fit.ts$imputations[[4]],
+                                    amelia.fit.ts$imputations[[3]]))[,lapply(.SD, mean), list(date)]
+    RMSE.temp <- caret::RMSE(complete.data$T1, appErg.data.Train$T1)
+    MAPE.temp <- MLmetrics::MAPE(complete.data$T1, appErg.data.Train$T1)
+    c(RMSE.temp, MAPE.temp)
+    
+  }
+  PM.variable
+  
 }
 
 stopCluster(cl) #stop cluster
-#boxplot(RMSE.T1.Amelia.ts)
+PM.Amelia.ts
 
+for( i in 1:) {}
+RMSE.summary <- cbind(PM.mice[[1]], PM.Amelia[[1]], PM.Amelia.ts[[1]]) %>% 
+  `colnames<-`(c("mice", "amelia", "amelia.ts"))
+MAPE.summary <- cbind(PM.mice[[2]], PM.Amelia[[2]], PM.Amelia.ts[[2]]) %>% 
+  `colnames<-`(c("mice", "amelia", "amelia.ts"))
 
-RMSE.summary <- cbind(RMSE.mice, RMSE.T1.Amelia, RMSE.T1.Amelia.ts) %>% `colnames<-`(c("mice", "amelia", "amelia.ts"))
-boxplot.matrix(x = RMSE.summary, use.cols = T, main = "RMSE for Appliances data and 10% missing data", 
-               ylab = "RMSE") # boxplot
+boxplot.matrix(x = RMSE.summary, use.cols = T, 
+               main = "RMSE for Appliances data and 10% missing data", 
+               ylab = "RMSE") # boxplot for RMSEs
+boxplot.matrix(x = MAPE.summary, use.cols = T, 
+               main = "MAPE for Appliances data and 10% missing data", 
+               ylab = "MAPE") # boxplot for MAPEs
 # convert "RMSE_all" from matrix to data.frame and save it
 #as.data.frame(RMSE.summary) %>% fwrite(file = "RMSE_Summary10perc.csv")
+#as.data.frame(MAPE.summary) %>% fwrite(file = "MAPE_Summary10perc.csv")
 
 
 
@@ -468,9 +491,9 @@ appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
-
-appErg.data.imp <- missForest(xmis = appErg.data.mis[ ,-1], maxiter = 2, 
-                              ntree = 50, mtry = 6)
+appErg.data.mis <- appErg.data.mis[,-29]
+appErg.data.imp <- missForest(xmis = appErg.data.mis[ , 4:6], maxiter = 5, 
+                              ntree = 100)
 
 stopCluster(cl) #stop cluster
 
@@ -485,8 +508,13 @@ appErg.data.err <- mixError(appErg.data.imp$ximp, appErg.data.mis, appErg.data)
 appErg.data.err
 
 RMSE.T1.missF <- caret::RMSE(pred = appErg.data.imp$ximp$T1 %>% as.data.frame(), 
-                                   obs = appErg.data$T1)
-RMSE.T1.aregI.missF # 1.977089
+                                   obs = appErg.data.Train$T1)
+RMSE.T1.missF # 0.1628999
+
+MAPE.T1.temp <- MLmetrics::MAPE(appErg.data.imp$ximp$T1, appErg.data.Train$T1)
+MAPE.T1.temp # 0.03415452
+
+
 
 
 # Missing values imputation using "Hmisc"
@@ -496,28 +524,53 @@ library(Hmisc)
 
 # impute with mean value
 RMSE.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data$T1)
+  caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.mean # 0.3837814
+
+MAPE.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.mean # 0.03529078
+
 
 # impute with median value
 RMSE.T1.median <- impute(appErg.data.mis$T1, fun = median) %>% as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data$T1)
+  caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.median # 0.3856154
+
+MAPE.T1.median <- impute(appErg.data.mis$T1, fun = median) %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.median # 0.03516635
+
 
 # impute with minimum value
 RMSE.T1.min <- impute(appErg.data.mis$T1, fun = min) %>% as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data$T1)
+  caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.min # 1.390827
+
+MAPE.T1.min <- impute(appErg.data.mis$T1, fun = min) %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.min # 0.0508717
+
 
 # impute with maximum value
 RMSE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data$T1)
+  caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.max # 1.016792
 
+MAPE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.max # 0.04154599
+
+
 # impute with random value
-RMSE.T1.median <- impute(appErg.data.mis$T1, fun = 'random') %>% as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data$T1)
-RMSE.T1.median
+RMSE.T1.random <- impute(appErg.data.mis$T1, fun = 'random') %>% as.data.frame() %>% 
+  caret::RMSE(pred = ., obs = appErg.data.Train$T1)
+RMSE.T1.random
+
+MAPE.T1.random <- impute(appErg.data.mis$T1, fun = 'random') %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.random # 0.03690613
+
 
 #using argImpute
 imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
@@ -526,8 +579,12 @@ imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
                             rv1, data = appErg.data.mis, n.impute = 5)
 imputed.arg
 RMSE.T1.aregI.hmisc <- caret::RMSE(pred = imputed.arg$imputed$T1 %>% as.data.frame(), 
-                       obs = appErg.data$T1)
+                       obs = appErg.data.Train$T1)
 RMSE.T1.aregI.hmisc # 1.977089
+
+MAPE.T1.aregI.hmisc <- MLmetrics::MAPE(imputed.arg$imputed$T1, appErg.data.Train$T1)
+MAPE.T1.aregI.hmisc # 1.977089
+
 
 
 
@@ -542,11 +599,10 @@ RMSE.T1.aregI.hmisc # 1.977089
 # appErg.data.imp <- mi(appErg.data.mis, seed = 123)
 # 
 # 
-# # MAPE (Performance Metric)
-# # Mean Absolute Percentage Error
-# #rowMeans(abs((actual-predicted)/actual) * 100)
-# #install.packages("MLmetrics")
-# #MLmetrics::MAPE(appErg.data$T1, appErg.data$T1)  
+# MAPE (Performance Metric) - Mean Absolute Percentage Error
+#rowMeans(abs((actual-predicted)/actual) * 100)
+install.packages("MLmetrics")
+MLmetrics::MAPE(appErg.data$T1, appErg.data.Train$T1)
 
 
 #imputing missing value with "mtsdi"
@@ -564,8 +620,11 @@ appErg.data.mtsdi <- mnimput(formula = ~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 +
 
 appErg.data.imp <- appErg.data.mtsdi$filled.dataset # Imputed dataset
 RMSE.T1.mtsdi <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
-                             obs = appErg.data$T1)
+                             obs = appErg.data.Train$T1)
 RMSE.T1.mtsdi # 0.07661691
+
+MAPE.T1.mtsdi <- MLmetrics::MAPE(appErg.data.imp$T1, appErg.data.Train$T1)
+MAPE.T1.mtsdi # 0.03326653
 
 
 
@@ -573,10 +632,10 @@ RMSE.T1.mtsdi # 0.07661691
 #imputing missing value with "VIM"
 #install.packages("VIM")
 library(VIM)
-# Calculate RMSE
-appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
 
 ### Hot Deck Imputation using "VIM"
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
 # run for loops in parallel
 cores = detectCores()
@@ -584,20 +643,25 @@ cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
 # Number of iterations can be changed using variable "i" in the code below
-RMSE.T1.VIM.hotdeck <- foreach(i = 1:10, .combine = rbind, .packages = c("VIM", "magrittr", "caret")) %dopar% {
+T1.VIM.hotdeck <- foreach(i = 1:10, .combine = rbind, 
+                          .packages = c("VIM", "magrittr", "caret", "MLmetrics")) %dopar% {
   
   appErg.data.imp <- VIM::hotdeck(data = appErg.data.mis)
   RMSE.T1.temp <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
                               obs = appErg.data$T1)
-  RMSE.T1.temp
+  MAPE.T1.temp <- MLmetrics::MAPE(appErg.data.imp$T1, appErg.data.Train$T1)
+  c(RMSE.T1.temp, MAPE.T1.temp)
   
 }
 
 stopCluster(cl) #stop cluster
-boxplot(RMSE.T1.VIM.hotdeck)
+boxplot(T1.VIM.hotdeck[ ,1]) #boxplot for RMSE
+boxplot(T1.VIM.hotdeck[ ,2]) #boxplot for MAPE
 
 
 ### k-Nearest neighbour imputation using "VIM"
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
@@ -606,12 +670,19 @@ registerDoParallel(cl)
 appErg.data.imp <- VIM::kNN(data = appErg.data.mis, k = 5, numFun = median, 
                             dist_var = colnames(appErg.data.imp)[-1])
 RMSE.T1.VIM.kNN <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
-                                   obs = appErg.data$T1)
+                                   obs = appErg.data.Train$T1)
 RMSE.T1.VIM.kNN # 0.1889839
+
+MAPE.T1.VIM.kNN <- MLmetrics::MAPE(appErg.data.imp$T1, appErg.data.Train$T1)
+MAPE.T1.VIM.kNN
 
 stopCluster(cl) #stop cluster
 boxplot(RMSE.T1.VIM.kNN)
+boxplot(MAPE.T1.VIM.kNN)
 
+
+### Iterative robust model-based imputation using "VIM"
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
 # run for loops in parallel
 cores = detectCores()
@@ -625,8 +696,17 @@ appErg.data.imp <- irmi(x = appErg.data.mis, maxit = 5, mi = 1,
 
 stopCluster(cl) #stop cluster
 
+RMSE.T1.VIM.irmi <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                               obs = appErg.data.Train$T1)
+RMSE.T1.VIM.kNN # 0.1889839
 
-### Imputation using "Individual Regression Imputation" in "VIM"
+MAPE.T1.VIM.kNN <- MLmetrics::MAPE(appErg.data.imp$T1, appErg.data.Train$T1)
+MAPE.T1.VIM.kNN
+
+
+### "Individual Regression Imputation" using "VIM"
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
+
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
@@ -635,10 +715,14 @@ registerDoParallel(cl)
 form.T1 <- T1 ~ T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
   RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
   T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint + rv1
-appErg.data.imp$T1 <- regressionImp(formula = form.T1, data = appErg.data.mis)
-RMSE.T1.VIM.IRI <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
-                               obs = appErg.data$T1)
-RMSE.T1.VIM.IRI
 
 stopCluster(cl) #stop cluster
+
+appErg.data.imp$T1 <- regressionImp(formula = form.T1, data = appErg.data.mis)
+RMSE.T1.VIM.IRI <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
+                               obs = appErg.data.Train$T1)
+RMSE.T1.VIM.IRI
+
+MAPE.T1.VIM.IRI <- MLmetrics::MAPE(appErg.data.imp$T1, appErg.data.Train$T1)
+MAPE.T1.VIM.IRI
 
