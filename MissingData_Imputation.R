@@ -179,7 +179,8 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-pack.list <- c("Amelia", "data.table", "MLmetrics", "Metrics", "caret", "doParallel", "magrittr")
+pack.list <- c("Amelia", "data.table", "MLmetrics", "Metrics", "caret", "doParallel", 
+               "magrittr")
 #4:(ncol(appErg.data.mis)-1)
 PM.Amelia <- foreach(i = 4:(ncol(appErg.data.mis)-1), .combine = cbind, .packages = c("foreach")) %dopar% {
   print(i)
@@ -248,7 +249,6 @@ boxplot.matrix(x = RMSE.summary, use.cols = T,
 ##############################################################################
 
 #install.packages("Amelia")
-
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 # convert "date" into "POSIXct" format
 appErg.data.mis$date <- as.POSIXct(x = appErg.data.mis$date)
@@ -258,7 +258,8 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
-pack.list <- c("Amelia", "data.table", "MLmetrics", "Metrics","caret", "doParallel")
+pack.list <- c("Amelia", "data.table", "MLmetrics", "Metrics","caret", 
+               "doParallel", "magrittr")
 #4:(ncol(appErg.data.mis)-1)
 PM.Amelia.ts <- foreach(i = 4:(ncol(appErg.data.mis)-1), .combine = cbind, .packages = c("foreach")) %dopar% {
   print()
@@ -304,19 +305,22 @@ boxplot.matrix(x = MAPE.summary, use.cols = T,
 
 
 
-# Missing values imputation using "missForest"
-#install.packages("missForest")
+####################################################
+# Imputing missing values using "missForest" package
+####################################################
 
+#install.packages("missForest")
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
 # run for loops in parallel
 cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
-appErg.data.mis <- appErg.data.mis[ ,-29] # remove column 'rv2'
-# ncols in "appErg.data.mis" are 28
+appErg.data.mis <- appErg.data.mis[ ,-29] # remove column 'rv2'(29th), as it same as 'rv1'
+# now, ncols in "appErg.data.mis" are 28
 
-pack.list <- c("missForest", "data.table", "MLmetrics", "Metrics", "caret", "foreach", "doParallel")
+pack.list <- c("missForest", "data.table", "MLmetrics", "Metrics", "caret", "foreach", 
+               "doParallel", "magrittr")
 #1:(ncol(appErg.data.mis)-3)
 PM.missForest <- foreach(i = 1:1, .combine = cbind, .packages = c("foreach", "doParallel")) %dopar% {
   
@@ -342,7 +346,6 @@ PM.missForest
 fwrite(x = PM.missForest %>% as.data.frame(), file = "PM_missForest_T1.csv")
 gc()
 
-
 #extract performance metrics
 
 #RMSE
@@ -362,14 +365,12 @@ fwrite(x = PM.missForest.SMAPE, file = "PM_Amelia_SMAPE.csv")
 
 
 
+###############################################
+# Imputing missing values using "Hmisc" pacakge
+###############################################
 
-
-
-
-
-# Missing values imputation using "Hmisc"
-appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 #install.packages("Hmisc")
+appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 library(Hmisc)
 
 # run for loops in parallel
@@ -381,25 +382,6 @@ registerDoParallel(cl)
 RMSE.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% as.data.frame() %>% 
   caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.mean # 0.3837814
-
-
-
-PM.missForest <- foreach(i = 1:2, .combine = cbind, .packages = c("foreach")) %dopar% {
-  
-  PM.variable <- foreach(j = 1:2, .combine = rbind, .packages = pack.list) %dopar% {
-    
-    appErg.data.imp <- missForest(xmis = appErg.data.mis[ , 4:6], maxiter = 5, ntree = 50)
-    RMSE.temp <- caret::RMSE(pred = appErg.data.imp$ximp[[i]], obs = appErg.data.Train[[i+3]])
-    MAPE.temp <- MLmetrics::MAPE(appErg.data.imp$ximp[[i]], appErg.data.Train[[i+3]])
-    SMAPE.temp <- Metrics::smape(appErg.data.imp$ximp[[i]], appErg.data.Train[[i+3]])
-    c(RMSE.temp, MAPE.temp, SMAPE.temp)
-    
-  }
-  PM.variable
-  
-}
-
-
 
 MAPE.T1.mean <- impute(appErg.data.mis$T1, fun = mean) %>% 
   MLmetrics::MAPE(., appErg.data.Train$T1)
@@ -443,6 +425,10 @@ RMSE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% as.data.frame() %>%
   caret::RMSE(pred = ., obs = appErg.data.Train$T1)
 RMSE.T1.max # 1.016792
 
+MAPE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% 
+  MLmetrics::MAPE(., appErg.data.Train$T1)
+MAPE.T1.max # 0.0508717
+
 SMAPE.T1.max <- impute(appErg.data.mis$T1, fun = max) %>% 
   Metrics::smape(., appErg.data.Train$T1)
 SMAPE.T1.max # 0.04154599
@@ -462,8 +448,8 @@ SMAPE.T1.random <- impute(appErg.data.mis$T1, fun = 'random') %>%
 SMAPE.T1.random # 0.03690613
 
 
-#using argImpute
-imputed.arg <- aregImpute(~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
+# impute using argImpute
+imputed.arg <- aregImpute(formula = ~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
                             RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
                             T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint +
                             rv1, data = appErg.data.mis, n.impute = 5)
@@ -480,7 +466,13 @@ SMAPE.T1.aregI.hmisc # 1.977089
 
 
 
-# # Missing values imputation using "mi"
+
+
+############################################
+# Imputing missing values using "mi" pacakge
+############################################
+
+
 # appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 # #install.packages("mi")
 # library(mi)
@@ -491,34 +483,70 @@ SMAPE.T1.aregI.hmisc # 1.977089
 
 
 
-#imputing missing value with "mtsdi"
+
+###############################################
+# Imputing missing values using "mtsdi" pacakge
+###############################################
+
 #install.packages("mtsdi")
-library(mtsdi)
-# Calculate RMSE
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
 
-# Multivariate Normal Imputation
-appErg.data.mtsdi <- mnimput(formula = ~ T1 + T2 + T3 + T4 + T6 + T6 + T7 + T8 + T9 +
-                               RH_1 + RH_2 + RH_3 + RH_4 + RH_5 + RH_6 + RH_7 + RH_8 + RH_9 +
-                               T_out + Press_mm_hg + RH_out + Windspeed + Visibility + Tdewpoint +
-                               rv1, dataset = appErg.data.mis, maxit = 1E2, ts = TRUE, 
-                             method = "spline")
+appErg.data.Train <- appErg.data.Train %>% as.data.frame()
+# change format of "appErg.data.Train" to data.frame for easier manipulation
 
-appErg.data.imp <- appErg.data.mtsdi$filled.dataset # Imputed dataset
-RMSE.T1.mtsdi <- caret::RMSE(pred = appErg.data.imp$T1 %>% as.data.frame(), 
-                             obs = appErg.data.Train$T1)
-RMSE.T1.mtsdi # 0.07661691
+# possible imputation methods - spline, ARIMA and gam
 
-SMAPE.T1.mtsdi <- Metrics::smape(appErg.data.imp$T1, appErg.data.Train$T1)
-SMAPE.T1.mtsdi # 0.03326653
+# Imputation using "spline" method
+# List of packages to be used in for loop
+pack.list <- c("mtsdi", "data.table", "MLmetrics", "Metrics", "caret", 
+               "foreach", "doParallel", "magrittr")
+# formula used for imputation
+imp.form = ~ T1 + RH_1 + T2 + RH_2 + T3 + RH_3 + T4 + RH_4 + T5 + RH_5 + T6 + RH_6 + T7 + 
+  RH_7 + T8 + RH_8 + T9 + RH_9 + T_out + Press_mm_hg + RH_out + Windspeed + Visibility + 
+  Tdewpoint + rv1
+
+# run for loops in parallel
+cores = detectCores()
+cl <- makeCluster(cores[1]-1) #not to overload your computer
+registerDoParallel(cl)
+
+PM.mtsdi.spline <- foreach(i = 1:1, .combine = rbind, .packages = pack.list) %dopar% {
+  print(i)
+  appErg.data.mtsdi <- mnimput(formula = imp.form, dataset = appErg.data.mis, 
+                               maxit = 1E2, ts = TRUE, method = "spline")
+  
+  appErg.data.mtsdi.spline <- appErg.data.mtsdi$filled.dataset # Imputed data
+  
+  RMSE.mtsdi.spline <- lapply(1:25, function(i) caret::RMSE(appErg.data.mtsdi.spline[[i]],
+                                                            appErg.data.Train[[i+3]])) %>% 
+    as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mtsdi.spline))
+  MAPE.mtsdi.spline <- lapply(1:25, function(i) MLmetrics::MAPE(appErg.data.mtsdi.spline[[i]],
+                                                                appErg.data.Train[[i+3]])) %>% 
+    as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mtsdi.spline))
+  SMAPE.mtsdi.spline <- lapply(1:25, function(i) Metrics::smape(appErg.data.mtsdi.spline[[i]],
+                                                                appErg.data.Train[[i+3]])) %>% 
+    as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mtsdi.spline))
+  cbind(RMSE.mtsdi.spline, MAPE.mtsdi.spline, SMAPE.mtsdi.spline)
+  
+}
+
+stopCluster(cl)
+
+appErg.data.Train <- appErg.data.Train %>% as.data.table()
+# change format of "appErg.data.Train" back to data.table
 
 
 
 
-#imputing missing value with "VIM"
+###############################################
+# Imputing missing values using "VIM" pacakge
+###############################################
+
 #install.packages("VIM")
 library(VIM)
-
 
 ### Hot Deck Imputation using "VIM"
 appErg.data.mis <- appErg.data.Train.mis.10perc # load dataset
