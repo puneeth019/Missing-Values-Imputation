@@ -289,7 +289,6 @@ PM.Amelia.ts <- foreach(i = 4:(ncol(appErg.data.mis)-1), .combine = cbind, .pack
 stopCluster(cl) #stop cluster
 PM.Amelia.ts
 #fwrite(x = PM.Amelia.ts %>% as.data.frame(), file = "PM_Amelia_ts.csv")
-gc()
 
 RMSE.summary <- cbind(PM.mice[[1]], PM.Amelia[[1]], PM.Amelia.ts[[1]]) %>% 
   `colnames<-`(c("mice", "amelia", "amelia.ts"))
@@ -348,7 +347,6 @@ PM.missForest <- foreach(i = 1:1, .combine = cbind, .packages = c("foreach", "do
 stopCluster(cl) #stop cluster
 PM.missForest
 fwrite(x = PM.missForest %>% as.data.frame(), file = "PM_missForest_T1.csv")
-gc()
 
 #extract performance metrics
 
@@ -369,7 +367,6 @@ fwrite(x = PM.missForest.SMAPE, file = "PM_Amelia_SMAPE.csv")
 
 
 
-
 ###############################################
 # Imputing missing values using "Hmisc" package
 ###############################################
@@ -383,7 +380,7 @@ Hmisc.RMSE.mean <- lapply(4:28, function(i) {
   impute(appErg.data.mis[[i]], fun = mean) %>% 
     as.data.frame() %>% 
     caret::RMSE(pred = ., obs = appErg.data.Train[[i]])
-  }) %>% 
+}) %>% 
   as.data.frame() %>% 
   `colnames<-`(colnames(appErg.data.Train[ ,4:28]))
 
@@ -476,9 +473,9 @@ Hmisc.SMAPE.max <- lapply(4:28, function(i) {
 
 # impute with random value
 Hmisc.RMSE.random <- lapply(4:28, function(i) {
-impute(appErg.data.mis[[i]], fun = random) %>% 
-  as.data.frame() %>% 
-  caret::RMSE(pred = ., obs = appErg.data.Train[[i]])
+  impute(appErg.data.mis[[i]], fun = random) %>% 
+    as.data.frame() %>% 
+    caret::RMSE(pred = ., obs = appErg.data.Train[[i]])
 }) %>% 
   as.data.frame() %>% 
   `colnames<-`(colnames(appErg.data.Train[ ,4:28]))
@@ -498,6 +495,10 @@ Hmisc.SMAPE.random <- lapply(4:28, function(i) {
   `colnames<-`(colnames(appErg.data.Train[ ,4:28]))
 
 # imputation using aregImpute
+
+data.mis.list <- lapply(4:28, function(i) 
+  appErg.data.Train %>% filter(appErg.data.mis[[i]] %>% is.na()) %>% select(i))
+
 # List of packages to be used in for loop
 pack.list <- c("Hmisc", "data.table", "MLmetrics", "Metrics", "caret", 
                "foreach", "doParallel", "magrittr")
@@ -511,19 +512,55 @@ cores = detectCores()
 cl <- makeCluster(cores[1]-1) #not to overload your computer
 registerDoParallel(cl)
 
+# control 'i' to vary #iterations
 PM.Hmisc.aregImpute <- foreach(i = 1:1, .combine = rbind, .packages = pack.list) %dopar% {
   print(i)
   imputed.arg <- aregImpute(formula = imp.form, data = appErg.data.mis, n.impute = 5)
+  
+  RMSE.aregI.hmisc <- lapply(1:25, function(j) {
+    caret::RMSE(imputed.arg$imputed[[j]] %>% rowMeans(),
+                data.mis.list[[j]] %>% data.matrix())
+  }
+  ) %>% as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mis[, 4:28]))
+  
+  MAPE.aregI.hmisc <- lapply(1:25, function(j) {
+    MLmetrics::MAPE(imputed.arg$imputed[[j]] %>% rowMeans(),
+                    data.mis.list[[j]] %>% data.matrix())
+  }
+  ) %>% as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mis[, 4:28]))
+  
+  SMAPE.aregI.hmisc <- lapply(1:25, function(j) {
+    Metrics::smape(imputed.arg$imputed[[j]] %>% rowMeans(),
+                   data.mis.list[[j]] %>% data.matrix())
+  }
+  ) %>% as.data.frame() %>% 
+    `colnames<-`(colnames(appErg.data.mis[, 4:28]))
+  
+  cbind(RMSE.aregI.hmisc, MAPE.aregI.hmisc, SMAPE.aregI.hmisc)
 }
-RMSE.T1.aregI.hmisc <- caret::RMSE(pred = imputed.arg$imputed$T1 %>% as.data.frame(), 
-                       obs = appErg.data.Train$T1)
-RMSE.T1.aregI.hmisc # 1.977089
 
-MAPE.T1.aregI.hmisc <- MLmetrics::MAPE(imputed.arg$imputed$T1, appErg.data.Train$T1)
-MAPE.T1.aregI.hmisc # 1.977089
+stopCluster(cl)
+PM.Hmisc.aregImpute
+fwrite(x = PM.Hmisc.aregImpute %>% as.data.frame(), file = "PM_Hmisc_aregImpute.csv")
 
-SMAPE.T1.aregI.hmisc <- Metrics::smape(imputed.arg$imputed$T1, appErg.data.Train$T1)
-SMAPE.T1.aregI.hmisc # 1.977089
+#extract performance metrics
+
+#RMSE
+PM.Hmisc.aregImpute.RMSE <- data.frame(PM.Hmisc.aregImpute[, 1:25])
+PM.Hmisc.aregImpute.RMSE$mean <- rowMeans(PM.Hmisc.aregImpute.RMSE, na.rm = T)
+fwrite(x = PM.Hmisc.aregImpute.RMSE , file = "PM_Hmisc_aregImpute_RMSE.csv")
+
+#MAPE
+PM.Hmisc.aregImpute.MAPE <- data.frame(PM.Hmisc.aregImpute[, 26:50])
+PM.Hmisc.aregImpute.MAPE$mean <- rowMeans(PM.Hmisc.aregImpute.MAPE, na.rm = T)
+fwrite(x = PM.Hmisc.aregImpute.MAPE , file = "PM_Hmisc_aregImpute_MAPE.csv")
+
+#SMAPE
+PM.Hmisc.aregImpute.SMAPE <- data.frame(PM.Hmisc.aregImpute[, 51:75])
+PM.Hmisc.aregImpute.SMAPE$mean <- rowMeans(PM.Hmisc.aregImpute.SMAPE, na.rm = T)
+fwrite(x = PM.Hmisc.aregImpute.SMAPE , file = "PM_Hmisc_aregImpute_SMAPE.csv")
 
 
 
@@ -575,16 +612,16 @@ PM.mtsdi.spline <- foreach(i = 1:1, .combine = rbind, .packages = pack.list) %do
   
   appErg.data.mtsdi.spline <- appErg.data.mtsdi$filled.dataset # Imputed data
   
-  RMSE.mtsdi.spline <- lapply(1:25, function(i) caret::RMSE(appErg.data.mtsdi.spline[[i]],
-                                                            appErg.data.Train[[i+3]])) %>% 
+  RMSE.mtsdi.spline <- lapply(1:25, function(j) caret::RMSE(appErg.data.mtsdi.spline[[j]],
+                                                            appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
-  MAPE.mtsdi.spline <- lapply(1:25, function(i) MLmetrics::MAPE(appErg.data.mtsdi.spline[[i]],
-                                                                appErg.data.Train[[i+3]])) %>% 
+  MAPE.mtsdi.spline <- lapply(1:25, function(j) MLmetrics::MAPE(appErg.data.mtsdi.spline[[j]],
+                                                                appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
-  SMAPE.mtsdi.spline <- lapply(1:25, function(i) Metrics::smape(appErg.data.mtsdi.spline[[i]],
-                                                                appErg.data.Train[[i+3]])) %>% 
+  SMAPE.mtsdi.spline <- lapply(1:25, function(j) Metrics::smape(appErg.data.mtsdi.spline[[j]],
+                                                                appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
   cbind(RMSE.mtsdi.spline, MAPE.mtsdi.spline, SMAPE.mtsdi.spline)
@@ -594,7 +631,6 @@ PM.mtsdi.spline <- foreach(i = 1:1, .combine = rbind, .packages = pack.list) %do
 stopCluster(cl)
 PM.mtsdi.spline
 fwrite(x = PM.mtsdi.spline %>% as.data.frame(), file = "PM_mtsdi_spline.csv")
-gc()
 
 #extract performance metrics
 
@@ -627,16 +663,16 @@ PM.mtsdi.ARIMA <- foreach(i = 1:1, .combine = rbind, .packages = pack.list) %dop
   
   appErg.data.mtsdi.spline <- appErg.data.mtsdi$filled.dataset # Imputed data
   
-  RMSE.mtsdi.spline <- lapply(1:25, function(i) caret::RMSE(appErg.data.mtsdi.spline[[i]],
-                                                            appErg.data.Train[[i+3]])) %>% 
+  RMSE.mtsdi.spline <- lapply(1:25, function(j) caret::RMSE(appErg.data.mtsdi.spline[[j]],
+                                                            appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
-  MAPE.mtsdi.spline <- lapply(1:25, function(i) MLmetrics::MAPE(appErg.data.mtsdi.spline[[i]],
-                                                                appErg.data.Train[[i+3]])) %>% 
+  MAPE.mtsdi.spline <- lapply(1:25, function(j) MLmetrics::MAPE(appErg.data.mtsdi.spline[[j]],
+                                                                appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
-  SMAPE.mtsdi.spline <- lapply(1:25, function(i) Metrics::smape(appErg.data.mtsdi.spline[[i]],
-                                                                appErg.data.Train[[i+3]])) %>% 
+  SMAPE.mtsdi.spline <- lapply(1:25, function(j) Metrics::smape(appErg.data.mtsdi.spline[[j]],
+                                                                appErg.data.Train[[j+3]])) %>% 
     as.data.frame() %>% 
     `colnames<-`(colnames(appErg.data.mtsdi.spline))
   cbind(RMSE.mtsdi.spline, MAPE.mtsdi.spline, SMAPE.mtsdi.spline)
